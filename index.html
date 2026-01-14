@@ -3,60 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Hệ Thống WebAR - Scalable</title>
+  <title>WebAR - Freeze Mode</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    /* ... Copy lại CSS cũ của bạn vào đây ... */
+    /* === CSS CƠ BẢN === */
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-    #info-panel { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100; background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px); border-left: 3px solid #fff; padding: 10px 15px; border-radius: 6px; color: #fff; max-height: 25%; overflow-y: auto; word-wrap: break-word; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    
+    /* Bảng thông tin (Giữ nguyên) */
+    #info-panel { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100; background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px); border-left: 3px solid #fff; padding: 10px 15px; border-radius: 6px; color: #fff; max-height: 25%; overflow-y: auto; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; pointer-events: auto; }
     #info-panel.visible { opacity: 1; transform: translateY(0); }
     #ui-title { margin: 0 0 4px 0; font-size: 16px; font-weight: 700; text-transform: uppercase; }
-    #ui-desc { margin: 0; font-size: 13px; line-height: 1.4; color: #e0e0e0; text-align: left; }
+    #ui-desc { margin: 0; font-size: 13px; line-height: 1.4; color: #e0e0e0; }
 
-    /* UI CHỤP ẢNH */
-    #btn-capture { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; background: rgba(255, 255, 255, 0.9); border: 4px solid #ccc; border-radius: 50%; z-index: 200; display: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    #btn-capture:active { transform: translateX(-50%) scale(0.95); background: #fff; }
-    
-    /* UI PREVIEW (Sau khi chụp) */
-    #preview-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 300; background: #000; display: none; flex-direction: column; }
-    #preview-image { width: 100%; height: 100%; object-fit: contain; }
-    
-    .preview-controls { position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; }
-    
-    .btn-action { padding: 10px 20px; border-radius: 30px; font-weight: bold; font-size: 14px; cursor: pointer; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.5); text-transform: uppercase; }
-    
-    #btn-save { background: #4CAF50; color: white; } /* Nút Lưu bên trái */
-    #btn-exit { background: #f44336; color: white; } /* Nút Thoát bên phải */
+    /* Nút Chụp (Tròn, trắng) */
+    #btn-capture { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; background: rgba(255, 255, 255, 0.9); border: 4px solid #ccc; border-radius: 50%; z-index: 200; display: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>'); background-position: center; background-repeat: no-repeat; background-size: 30px;}
 
-    /* Ẩn các UI khác khi đang xem preview */
-    body.in-preview #info-panel, 
-    body.in-preview #btn-capture { display: none !important; }
-    body.in-preview .mindar-ui-scanning { display: none !important; }
+    /* Nút Thoát (Dài, đỏ) */
+    #btn-exit { 
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+        padding: 12px 30px; z-index: 201; display: none;
+        background: #f44336; color: white; border: none; border-radius: 30px;
+        font-weight: bold; font-size: 16px; cursor: pointer; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    /* ẢNH NỀN ĐÓNG BĂNG (Quan trọng) */
+    #background-freeze {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        object-fit: cover; 
+        z-index: -1; /* Nằm dưới lớp 3D nhưng trên video camera */
+        display: none; 
+    }
+
+    /* Ẩn các nút scanning mặc định của MindAR cho đẹp */
+    .mindar-ui-scanning { display: none !important; }
   </style>
 
-  <script src="./js/database.js"></script>   <script src="./js/components.js"></script> <script src="./js/main.js"></script>       </head>
+  <script src="./js/database.js"></script>
+  <script src="./js/components.js"></script>
+  <script src="./js/main.js"></script>
+</head>
 
 <body>
   <div id="info-panel"><div id="ui-title"></div><div id="ui-desc"></div></div>
 
-  <!-- Nút chụp ảnh (Hiện khi có target) -->
   <button id="btn-capture"></button>
+  <button id="btn-exit">TIẾP TỤC QUÉT</button>
 
-  <!-- Màn hình xem trước ảnh -->
-  <div id="preview-container">
-    <img id="preview-image" src="" alt="Snapshot">
-    <div class="preview-controls">
-      <button id="btn-save" class="btn-action">Lưu ảnh</button>
-      <button id="btn-exit" class="btn-action">Thoát</button>
-    </div>
-  </div>
+  <img id="background-freeze" src="" alt="">
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001; uiLoading: no; autoStart: true;"
-    renderer="colorManagement: true, physicallyCorrectLights; preserveDrawingBuffer: true;"
+    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001; uiLoading: yes; autoStart: true;"
+    renderer="colorManagement: true, physicallyCorrectLights; preserveDrawingBuffer: true; alpha: true;"
     color-space="sRGB"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
@@ -66,11 +67,9 @@
       </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-    </a-scene>
+  </a-scene>
 
   <script>
-    // Code unlock audio nhỏ gọn để ở đây
     function unlockAudio() {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) { new AudioContext().resume(); }
