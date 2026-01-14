@@ -1,13 +1,12 @@
-/* js/main.js - ĐÃ FIX */
+/* js/main.js - LOGIC FREEZE AR (ĐÓNG BĂNG NỀN - HIỆU ỨNG VẪN CHẠY) */
 
 document.addEventListener("DOMContentLoaded", () => {
   const scene = document.querySelector('a-scene');
   const assetsContainer = document.querySelector('a-assets');
 
-  // Hàm tạo Overlay Text (Fix: Truyền string trực tiếp, không dùng url())
+  // --- 1. GIỮ NGUYÊN LOGIC DATABASE CŨ ---
   function createOverlay(item, delay) {
     const el = document.createElement('a-entity');
-    // CHÚ Ý: Đã bỏ chữ 'url(...)' đi
     el.setAttribute('html-overlay-controller', `delay: ${delay}; soundText: ${item.audio_text}`);
     el.setAttribute('data-title', item.title);
     el.setAttribute('data-desc', item.desc);
@@ -19,16 +18,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const targetEl = document.createElement('a-entity');
     targetEl.setAttribute('mindar-image-target', `targetIndex: ${item.targetIndex}`);
 
-    // === LOẠI 1: ẢNH ===
+    // LOẠI 1: ẢNH
     if (item.type === 'image') {
       targetEl.appendChild(createOverlay(item, 500));
-      // ĐÃ XÓA logic audio riêng ở đây để chuyển xuống dưới dùng chung
     }
-
-    // === LOẠI 2: MÔ HÌNH ===
+    // LOẠI 2: MÔ HÌNH
     else if (item.type === 'model') {
       const modelContainer = document.createElement('a-entity');
-      // Logic mô hình giữ nguyên
       modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0.08 0; finalPos: 0 0.32 0`);
       modelContainer.setAttribute('slow-spin', '');
 
@@ -41,15 +37,14 @@ document.addEventListener("DOMContentLoaded", () => {
       targetEl.appendChild(modelContainer);
       targetEl.appendChild(createOverlay(item, 2000));
     }
-
-    // === LOẠI 3: VIDEO ===
+    // LOẠI 3: VIDEO
     else if (item.type === 'video') {
       const vidAsset = document.createElement('video');
       vidAsset.setAttribute('id', item.videoId);
       vidAsset.setAttribute('src', item.videoSrc);
       vidAsset.setAttribute('preload', 'auto');
       vidAsset.setAttribute('loop', 'true');
-      vidAsset.setAttribute('muted', 'true'); // Video mặc định tắt tiếng
+      vidAsset.setAttribute('muted', 'true');
       vidAsset.setAttribute('playsinline', '');
       vidAsset.setAttribute('webkit-playsinline', '');
       vidAsset.setAttribute('crossorigin', 'anonymous');
@@ -73,11 +68,9 @@ document.addEventListener("DOMContentLoaded", () => {
       targetEl.appendChild(vidPlane);
     }
 
-    // === [MỚI] LOGIC PHÁT THUYẾT MINH DÙNG CHUNG CHO CẢ 3 LOẠI ===
-    // Đặt ở đây để Model hay Video đều nhận được
+    // ÂM THANH CHUNG (Phát sau 3s)
     if (item.audio_desc) {
       const audioEntity = document.createElement('a-entity');
-      // Delay 2000ms (2 giây) để tránh đè lên âm thanh xuất hiện 3D hoặc Video lúc đầu
       audioEntity.setAttribute('delayed-audio', `sound: ${item.audio_desc}; delay: 3000`);
       targetEl.appendChild(audioEntity);
     }
@@ -85,76 +78,60 @@ document.addEventListener("DOMContentLoaded", () => {
     scene.appendChild(targetEl);
   });
 
-  // === LOGIC CHỤP ẢNH (SNAPSHOT) ===
+  // --- 2. LOGIC MỚI: CHẾ ĐỘ ĐÓNG BĂNG ---
   const btnCapture = document.getElementById('btn-capture');
-  const previewContainer = document.getElementById('preview-container');
-  const previewImage = document.getElementById('preview-image');
-  const btnSave = document.getElementById('btn-save');
   const btnExit = document.getElementById('btn-exit');
+  const bgFreeze = document.getElementById('background-freeze');
 
-  // Hàm chụp ảnh (Ghép Video nền + WebGL 3D)
-  function takeScreenshot() {
-    const video = document.querySelector('video'); // Video feed của MindAR
-    const aScene = document.querySelector('a-scene');
-    const glCanvas = aScene.canvas; // Canvas 3D
+  // Hàm: Chụp lại nền camera hiện tại
+  function captureVideoBackground() {
+    const video = document.querySelector('video'); // Video gốc của MindAR
+    if (!video) return null;
 
-    if (!video || !glCanvas) return;
-
-    // Tạo canvas tạm để vẽ đè lên nhau
-    const captureCanvas = document.createElement('canvas');
-    const width = glCanvas.width;
-    const height = glCanvas.height;
-    captureCanvas.width = width;
-    captureCanvas.height = height;
-    const ctx = captureCanvas.getContext('2d');
-
-    // 1. Vẽ Video Camera (Căn chỉnh object-fit: cover)
-    // Tính toán tỷ lệ để crop video cho khớp màn hình
-    const vRatio = video.videoWidth / video.videoHeight;
-    const cRatio = width / height;
-    let sWidth, sHeight, sx, sy;
-
-    if (vRatio > cRatio) {
-      sHeight = video.videoHeight;
-      sWidth = sHeight * cRatio;
-      sx = (video.videoWidth - sWidth) / 2;
-      sy = 0;
-    } else {
-      sWidth = video.videoWidth;
-      sHeight = sWidth / cRatio;
-      sx = 0;
-      sy = (video.videoHeight - sHeight) / 2;
-    }
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
     
-    // Vẽ video đã crop lên canvas
-    ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, width, height);
-
-    // 2. Vẽ lớp 3D lên trên
-    ctx.drawImage(glCanvas, 0, 0, width, height);
-
-    // 3. Xuất ra ảnh
-    return captureCanvas.toDataURL('image/png');
+    // Vẽ lại đúng khung hình video hiện tại
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg');
   }
 
-  // Sự kiện nút Chụp
+  // KHI ẤN NÚT CHỤP
   btnCapture.addEventListener('click', () => {
-    const dataURL = takeScreenshot();
-    previewImage.src = dataURL;
-    previewContainer.style.display = 'flex';
-    document.body.classList.add('in-preview'); // Class để ẩn các UI khác
+    // Bước 1: Chụp ảnh nền và hiển thị lên thẻ IMG
+    const bgData = captureVideoBackground();
+    if (bgData) {
+        bgFreeze.src = bgData;
+        bgFreeze.style.display = 'block'; // Che đi camera thật
+    }
+
+    // Bước 2: Dừng hệ thống Tracking
+    // Lệnh này làm cho AR "đứng yên" tại chỗ, không cần cầm điện thoại soi nữa
+    // Nhưng các hiệu ứng (xoay, phát nhạc) vẫn chạy tiếp
+    if (scene.systems['mindar-image-system']) {
+      scene.systems['mindar-image-system'].pause();
+    }
+
+    // Bước 3: Đổi nút bấm
+    btnCapture.style.display = 'none';
+    btnExit.style.display = 'block';
   });
 
-  // Sự kiện nút Lưu
-  btnSave.addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = 'ar-snapshot-' + Date.now() + '.png';
-    link.href = previewImage.src;
-    link.click();
-  });
-
-  // Sự kiện nút Thoát
+  // KHI ẤN NÚT THOÁT
   btnExit.addEventListener('click', () => {
-    previewContainer.style.display = 'none';
-    document.body.classList.remove('in-preview');
+    // Bước 1: Ẩn ảnh tĩnh -> Lộ ra camera thật
+    bgFreeze.style.display = 'none';
+    bgFreeze.src = ""; // Giải phóng bộ nhớ
+
+    // Bước 2: Bật lại Tracking
+    if (scene.systems['mindar-image-system']) {
+      scene.systems['mindar-image-system'].unpause();
+    }
+
+    // Bước 3: Đổi nút bấm
+    btnExit.style.display = 'none';
+    // Lưu ý: Nút capture sẽ tự hiện lại khi tìm thấy ảnh (do code trong components.js xử lý)
   });
 });
