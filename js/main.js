@@ -127,15 +127,28 @@ document.addEventListener("DOMContentLoaded", () => {
     btnExit.style.display = 'block';
   });
 
-  // KHI ẤN NÚT THOÁT
+  // KHI ẤN NÚT THOÁT (TIẾP TỤC QUÉT)
   btnExit.addEventListener('click', () => {
+    // 1. Ẩn ảnh nền tĩnh -> Lộ ra camera thật
     bgFreeze.style.display = 'none';
-    bgFreeze.src = "";
+    bgFreeze.src = ""; // Giải phóng bộ nhớ ảnh
 
+    // 2. Bật lại Tracking của MindAR
     if (scene.systems['mindar-image-system']) {
       scene.systems['mindar-image-system'].unpause();
     }
 
+    // === [QUAN TRỌNG: SỬA LỖI ĐÈ HÌNH] ===
+    // Ép buộc tất cả các Target phải "Biến mất" ngay lập tức
+    // Việc này sẽ kích hoạt các sự kiện targetLost trong components.js 
+    // giúp tắt nhạc, tắt video và ẩn mô hình cũ đi.
+    const allTargets = document.querySelectorAll('[mindar-image-target]');
+    allTargets.forEach(target => {
+        target.emit('targetLost'); 
+    });
+
+    // 3. Ẩn nút thoát
     btnExit.style.display = 'none';
   });
 });
+
