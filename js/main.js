@@ -25,12 +25,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // LOẠI 2: MÔ HÌNH
     else if (item.type === 'model') {
       const modelContainer = document.createElement('a-entity');
-      modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0.08 0; finalPos: 0 0.32 0`);
+      modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 -0.5 0.5; finalPos: 0 -0.5 0.5`);
       modelContainer.setAttribute('slow-spin', '');
 
       const model = document.createElement('a-entity');
       model.setAttribute('gltf-model', `url(${item.modelSrc})`);
-      model.setAttribute('rotation', '0 90 0');
+      model.setAttribute('rotation', '0 0 0');
       model.setAttribute('transparent-model', 'opacity: 0.8');
       
       modelContainer.appendChild(model);
@@ -151,6 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnExit.style.display = 'none';
   });
 });
+
 
 
 
