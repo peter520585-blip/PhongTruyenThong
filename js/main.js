@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const model = document.createElement('a-entity');
       model.setAttribute('gltf-model', `url(${item.modelSrc})`);
-      model.setAttribute('rotation', '0 0 360');
+      model.setAttribute('rotation', '0 0 90');
       model.setAttribute('transparent-model', 'opacity: 0.8');
       
       modelContainer.appendChild(model);
@@ -151,6 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnExit.style.display = 'none';
   });
 });
+
 
 
 
