@@ -1,4 +1,4 @@
-/* js/main.js - LOGIC FREEZE AR (ĐÓNG BĂNG NỀN - HIỆU ỨNG VẪN CHẠY) */
+/* js/main.js - FIX LỖI CHỤP NHẦM VIDEO TƯ LIỆU */
 
 document.addEventListener("DOMContentLoaded", () => {
   const scene = document.querySelector('a-scene');
@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
       targetEl.appendChild(vidPlane);
     }
 
-    // ÂM THANH CHUNG (Phát sau 3s)
+    // ÂM THANH CHUNG
     if (item.audio_desc) {
       const audioEntity = document.createElement('a-entity');
       audioEntity.setAttribute('delayed-audio', `sound: ${item.audio_desc}; delay: 3000`);
@@ -83,55 +83,59 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnExit = document.getElementById('btn-exit');
   const bgFreeze = document.getElementById('background-freeze');
 
-  // Hàm: Chụp lại nền camera hiện tại
+  // === HÀM ĐÃ SỬA LỖI Ở ĐÂY ===
   function captureVideoBackground() {
-    const video = document.querySelector('video'); // Video gốc của MindAR
-    if (!video) return null;
+    // Lấy TẤT CẢ các thẻ video trong trang
+    const allVideos = document.querySelectorAll('video');
+    let cameraVideo = null;
+
+    // Tìm video nào KHÔNG CÓ ID (Vì video tư liệu mình đã đặt ID là vid_... rồi)
+    // Video của MindAR tự sinh ra sẽ không có ID hoặc class riêng
+    allVideos.forEach(v => {
+        if (!v.id || v.id === "") {
+            cameraVideo = v;
+        }
+    });
+
+    // Nếu vẫn không tìm thấy thì fallback về cái đầu tiên (hiếm khi xảy ra)
+    if (!cameraVideo && allVideos.length > 0) cameraVideo = allVideos[0];
+    
+    if (!cameraVideo) return null;
 
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = cameraVideo.videoWidth;
+    canvas.height = cameraVideo.videoHeight;
     const ctx = canvas.getContext('2d');
     
-    // Vẽ lại đúng khung hình video hiện tại
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/jpeg');
   }
 
   // KHI ẤN NÚT CHỤP
   btnCapture.addEventListener('click', () => {
-    // Bước 1: Chụp ảnh nền và hiển thị lên thẻ IMG
     const bgData = captureVideoBackground();
     if (bgData) {
         bgFreeze.src = bgData;
-        bgFreeze.style.display = 'block'; // Che đi camera thật
+        bgFreeze.style.display = 'block'; 
     }
 
-    // Bước 2: Dừng hệ thống Tracking
-    // Lệnh này làm cho AR "đứng yên" tại chỗ, không cần cầm điện thoại soi nữa
-    // Nhưng các hiệu ứng (xoay, phát nhạc) vẫn chạy tiếp
     if (scene.systems['mindar-image-system']) {
       scene.systems['mindar-image-system'].pause();
     }
 
-    // Bước 3: Đổi nút bấm
     btnCapture.style.display = 'none';
     btnExit.style.display = 'block';
   });
 
   // KHI ẤN NÚT THOÁT
   btnExit.addEventListener('click', () => {
-    // Bước 1: Ẩn ảnh tĩnh -> Lộ ra camera thật
     bgFreeze.style.display = 'none';
-    bgFreeze.src = ""; // Giải phóng bộ nhớ
+    bgFreeze.src = "";
 
-    // Bước 2: Bật lại Tracking
     if (scene.systems['mindar-image-system']) {
       scene.systems['mindar-image-system'].unpause();
     }
 
-    // Bước 3: Đổi nút bấm
     btnExit.style.display = 'none';
-    // Lưu ý: Nút capture sẽ tự hiện lại khi tìm thấy ảnh (do code trong components.js xử lý)
   });
 });
