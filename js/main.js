@@ -125,6 +125,55 @@ document.addEventListener("DOMContentLoaded", () => {
       // Gắn vào Target
       targetEl.appendChild(vidPlane);
     }
+    // LOẠI 5: DUAL MODEL (2 NGƯỜI MẪU NAM NỮ)
+    // ============================================================
+    else if (item.type === 'dual-model') {
+      // 1. Tạo cái VỎ CHỨA (Container) chung cho cả 2 người
+      // Hiệu ứng "reveal-model" sẽ áp dụng lên vỏ này -> Cả 2 cùng to lên 1 lúc
+      const container = document.createElement('a-entity');
+      
+      // Cấu hình hiệu ứng xuất hiện (Giống model đơn nhưng chỉnh scale nhỏ hơn chút vì 2 người khá to)
+      // finalScale: 0.5 (Bạn có thể tăng giảm tùy độ to của file 3D)
+      container.setAttribute('reveal-model', `duration: 2500; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.5 0.5 0.5; startPos: 0 0 0; finalPos: 0 0 0`);
+      
+      // Chỉnh xoay vỏ chứa nếu mô hình bị quay lưng lại (ví dụ xoay 180 độ y)
+      // container.setAttribute('rotation', '0 0 0'); 
+      
+      // LƯU Ý: Không thêm 'slow-spin' nên nó sẽ đứng yên.
+
+      // 2. Tạo Model NAM (Bên Trái)
+      const maleModel = document.createElement('a-entity');
+      maleModel.setAttribute('gltf-model', `url(${item.modelSrc_male})`);
+      // Dịch sang trái 0.4 đơn vị
+      maleModel.setAttribute('position', '-0.4 0 0'); 
+      // Dùng component trong suốt để fix lỗi hiển thị
+      maleModel.setAttribute('transparent-model', 'opacity: 1.0'); 
+
+      // 3. Tạo Model NỮ (Bên Phải)
+      const femaleModel = document.createElement('a-entity');
+      femaleModel.setAttribute('gltf-model', `url(${item.modelSrc_female})`);
+      // Dịch sang phải 0.4 đơn vị
+      femaleModel.setAttribute('position', '0.4 0 0'); 
+      femaleModel.setAttribute('transparent-model', 'opacity: 1.0');
+
+      // 4. Gắn 2 người vào VỎ
+      container.appendChild(maleModel);
+      container.appendChild(femaleModel);
+
+      // 5. Gắn VỎ vào Target
+      targetEl.appendChild(container);
+
+      // 6. Hiển thị bảng thông tin (Giống chế độ cũ)
+      // Hiện bảng sau 2 giây (khi mô hình đã hiện xong)
+      targetEl.appendChild(createOverlay(item, 2000));
+      
+      // 7. Âm thanh thuyết minh (Nếu có)
+      if (item.audio_desc) {
+          const audioEntity = document.createElement('a-entity');
+          audioEntity.setAttribute('delayed-audio', `sound: ${item.audio_desc}; delay: 2500`);
+          targetEl.appendChild(audioEntity);
+      }
+    }
     
     // ÂM THANH CHUNG
     if (item.audio_desc) {

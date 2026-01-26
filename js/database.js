@@ -50,7 +50,7 @@ const AR_DATABASE = [
   },
 {
     type: 'model',
-    targetIndex: 4,
+    targetIndex: 9,
     title: "MÁY ẢNH ARYKA 608 ",
     desc: "Máy ảnh ARYKA 608 là thiết bị chụp ảnh chuyên dụng, được sử dụng để ghi lại hình ảnh phục vụ công tác chuyên môn, lưu trữ tư liệu và báo cáo nhiệm vụ trong đơn vị. Máy có kết cấu gọn, độ bền cao, hoạt động ổn định trong điều kiện làm việc dã ngoại và môi trường khắc nghiệt. Với khả năng ghi nhận hình ảnh tương đối chính xác, rõ nét theo tiêu chuẩn thời kỳ sử dụng, ARYKA 608 góp phần quan trọng trong việc lưu giữ hồ sơ, minh chứng hiện trường, phục vụ công tác tổng kết, huấn luyện và giáo dục truyền thống.",
     color: "#FFD700",
@@ -69,6 +69,24 @@ const AR_DATABASE = [
     // Đường dẫn đến file WEBM xịn của bạn (nhớ sửa đúng tên file)
     videoSrc: "./assets/videos/lichsu.webm", 
     videoId: "vid_pano_main", // ID không được trùng với các cái khác
+  },
+  // --- MỤC MỚI: 2 NGƯỜI MẪU QUÂN PHỤC ---
+  {
+    type: 'dual-model',     // Tên chế độ mới
+    targetIndex: 4,         // Sửa số này theo đúng thứ tự ảnh bìa sách của bạn
+    title: "QUÂN PHỤC HẢI QUÂN",
+    desc: "Giới thiệu bộ quân phục sĩ quan cấp tá và quân phục dã chiến. Thiết kế trang trọng, uy nghiêm, thể hiện sức mạnh và kỷ luật của Quân chủng Hải quân Nhân dân Việt Nam.",
+    
+    color: "#00E5FF",       // Màu chủ đạo
+    
+    // Đường dẫn 2 file 3D (Nam & Nữ)
+    modelSrc_male: "./assets/models/tieulenam.glb",   
+    modelSrc_female: "./assets/models/tieulenu.glb",
+
+    // Âm thanh
+    audio_3d: "./assets/audio/3d_ra.mp3",       // Tiếng mô hình hiện lên
+    audio_desc: "./assets/audio/thuyetminh_mayanh.mp3", // Thuyết minh
+    audio_text: "./assets/audio/text_ra.mp3"    // Tiếng hiện chữ
   },
 ];
 
