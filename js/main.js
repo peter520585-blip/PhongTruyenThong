@@ -66,13 +66,14 @@ document.addEventListener("DOMContentLoaded", () => {
       
       targetEl.appendChild(vidPlane);
     }
+    // LOẠI 4: WEBM OVERLAY (AUTO FIT + CÓ NÚT CHỤP ẢNH)
+    // ============================================================
     else if (item.type === 'webm-overlay') {
       // 1. Tạo Asset Video
       const vidAsset = document.createElement('video');
       vidAsset.setAttribute('id', item.videoId);
       vidAsset.setAttribute('src', item.videoSrc);
       vidAsset.setAttribute('preload', 'auto');
-      
       vidAsset.setAttribute('playsinline', '');
       vidAsset.setAttribute('webkit-playsinline', '');
       vidAsset.setAttribute('crossorigin', 'anonymous');
@@ -82,33 +83,29 @@ document.addEventListener("DOMContentLoaded", () => {
       const vidPlane = document.createElement('a-plane');
       vidPlane.setAttribute('src', `#${item.videoId}`);
       
-      // --- [THẦN CHÚ TỰ ĐỘNG] ---
-      // Mặc định cứ để width=1, height=0.5 (đề phòng chưa load được)
+      // Auto Fit kích thước
       vidPlane.setAttribute('width', '1'); 
-      vidPlane.setAttribute('height', '0.5'); // Số tạm thời
-
-      // Lắng nghe khi video tải xong thông số -> Tự chỉnh lại height cho chuẩn
+      vidPlane.setAttribute('height', '0.5'); // Số tạm
       vidAsset.addEventListener('loadedmetadata', () => {
           if (vidAsset.videoWidth && vidAsset.videoHeight) {
               const ratio = vidAsset.videoHeight / vidAsset.videoWidth;
-              vidPlane.setAttribute('height', ratio); // Tự động set tỷ lệ chuẩn
-              console.log(`Đã tự động chỉnh tỷ lệ video ${item.videoId} thành: ${ratio}`);
+              vidPlane.setAttribute('height', ratio); 
           }
       });
 
-      // VỊ TRÍ & VẬT LIỆU (Giữ nguyên)
+      // Vị trí & Vật liệu
       vidPlane.setAttribute('position', '0 0 0.05');
       vidPlane.setAttribute('material', 'shader: flat; transparent: true; depthWrite: false');
 
-      // 3. Logic điều khiển (Hết thì dừng - Quét lại chạy mới)
+      // 3. Logic điều khiển
       targetEl.addEventListener('targetFound', () => {
-        // Nếu video đã hết -> Tua lại
-        if (vidAsset.ended) {
-            vidAsset.currentTime = 0;
-        }
-        // Play
+        // --- [MỚI] HIỆN NÚT CHỤP ẢNH ---
+        const btnCapture = document.getElementById('btn-capture');
+        if(btnCapture) btnCapture.style.display = 'block'; 
+
+        // Xử lý video
+        if (vidAsset.ended) { vidAsset.currentTime = 0; }
         vidAsset.play().catch(e => {
-            // Fix lỗi chặn autoplay
             if (!vidAsset.muted) {
                 vidAsset.muted = true;
                 vidAsset.play();
@@ -117,6 +114,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       targetEl.addEventListener('targetLost', () => {
+        // --- [MỚI] ẨN NÚT CHỤP ẢNH ---
+        const btnCapture = document.getElementById('btn-capture');
+        if(btnCapture) btnCapture.style.display = 'none';
+
+        // Xử lý video
         vidAsset.pause();
       });
 
