@@ -66,7 +66,64 @@ document.addEventListener("DOMContentLoaded", () => {
       
       targetEl.appendChild(vidPlane);
     }
+    else if (item.type === 'webm-overlay') {
+      // 1. Tạo Asset Video
+      const vidAsset = document.createElement('video');
+      vidAsset.setAttribute('id', item.videoId);
+      vidAsset.setAttribute('src', item.videoSrc);
+      vidAsset.setAttribute('preload', 'auto');
+      
+      vidAsset.setAttribute('playsinline', '');
+      vidAsset.setAttribute('webkit-playsinline', '');
+      vidAsset.setAttribute('crossorigin', 'anonymous');
+      assetsContainer.appendChild(vidAsset);
 
+      // 2. Tạo tấm hiển thị (Plane)
+      const vidPlane = document.createElement('a-plane');
+      vidPlane.setAttribute('src', `#${item.videoId}`);
+      
+      // --- [THẦN CHÚ TỰ ĐỘNG] ---
+      // Mặc định cứ để width=1, height=0.5 (đề phòng chưa load được)
+      vidPlane.setAttribute('width', '1'); 
+      vidPlane.setAttribute('height', '0.5'); // Số tạm thời
+
+      // Lắng nghe khi video tải xong thông số -> Tự chỉnh lại height cho chuẩn
+      vidAsset.addEventListener('loadedmetadata', () => {
+          if (vidAsset.videoWidth && vidAsset.videoHeight) {
+              const ratio = vidAsset.videoHeight / vidAsset.videoWidth;
+              vidPlane.setAttribute('height', ratio); // Tự động set tỷ lệ chuẩn
+              console.log(`Đã tự động chỉnh tỷ lệ video ${item.videoId} thành: ${ratio}`);
+          }
+      });
+
+      // VỊ TRÍ & VẬT LIỆU (Giữ nguyên)
+      vidPlane.setAttribute('position', '0 0 0.05');
+      vidPlane.setAttribute('material', 'shader: flat; transparent: true; depthWrite: false');
+
+      // 3. Logic điều khiển (Hết thì dừng - Quét lại chạy mới)
+      targetEl.addEventListener('targetFound', () => {
+        // Nếu video đã hết -> Tua lại
+        if (vidAsset.ended) {
+            vidAsset.currentTime = 0;
+        }
+        // Play
+        vidAsset.play().catch(e => {
+            // Fix lỗi chặn autoplay
+            if (!vidAsset.muted) {
+                vidAsset.muted = true;
+                vidAsset.play();
+            }
+        });
+      });
+
+      targetEl.addEventListener('targetLost', () => {
+        vidAsset.pause();
+      });
+
+      // Gắn vào Target
+      targetEl.appendChild(vidPlane);
+    }
+    
     // ÂM THANH CHUNG
     if (item.audio_desc) {
       const audioEntity = document.createElement('a-entity');
@@ -150,6 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnExit.style.display = 'none';
   });
 });
+
 
 
 
