@@ -165,16 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // 6. Hiển thị bảng thông tin (Giống chế độ cũ)
       // Hiện bảng sau 2 giây (khi mô hình đã hiện xong)
-      targetEl.appendChild(createOverlay(item, 2000));
-      
-      // 7. Âm thanh thuyết minh (Nếu có)
-      if (item.audio_desc) {
-          const audioEntity = document.createElement('a-entity');
-          audioEntity.setAttribute('delayed-audio', `sound: ${item.audio_desc}; delay: 2500`);
-          targetEl.appendChild(audioEntity);
-      }
+      targetEl.appendChild(createOverlay(item, 2000));   
     }
-    
+
     // ÂM THANH CHUNG
     if (item.audio_desc) {
       const audioEntity = document.createElement('a-entity');
