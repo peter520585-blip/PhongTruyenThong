@@ -59,5 +59,16 @@ const AR_DATABASE = [
     audio_desc: "./assets/audio/thuyetminh_mayanh.mp3",
     audio_text: "./assets/audio/text_ra.mp3"
   },
-
+// --- MỤC MỚI: PANO HIỆU ỨNG (WEBM) ---
+  {
+    type: 'webm-overlay',   // Tên chế độ mới
+    targetIndex: 1,         // Số thứ tự của ảnh Pano trong file targets.mind (thường là 0)
+    title: "", 
+    desc: "", 
+    
+    // Đường dẫn đến file WEBM xịn của bạn (nhớ sửa đúng tên file)
+    videoSrc: "./assets/videos/lichsu.webm", 
+    videoId: "vid_pano_main", // ID không được trùng với các cái khác
+  },
 ];
+
