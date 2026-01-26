@@ -16,7 +16,7 @@ const AR_DATABASE = [
   // --- TARGET 1: VIDEO (Tư liệu) ---
   {
     type: 'video',
-    targetIndex: 1,
+    targetIndex: 0,
     title: "BÀN GIAO THỦY LÔI",
     desc: "Trung tâm BĐKT Vùng 3 bàn giao thủy lôi cho nhiệm vụ diễn tập năm 2024",
     color: "#FFAB00",
