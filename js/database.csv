@@ -1,8 +1,8 @@
 type,targetIndex,title,desc,file_main,file_sub,audio_desc,video_id
-image,0,Đ/C NGUYỄN PHAN VINH,Sinh năm: 1933; Mất năm: 1968; Anh hùng Lực lượng vũ trang nhân dân; sĩ quan Hải quân Nhân dân Việt Nam...,,,thuyetminh1.mp3,
-video,0,BÀN GIAO THỦY LÔI,Trung tâm BĐKT Vùng 3 bàn giao thủy lôi cho nhiệm vụ diễn tập năm 2024,video1.mp4,,thuyetminh_video1.mp3,vid_2
-model,2,CƠ CẤU NGẮM CƠ KHÍ,Cơ cấu ngắm cơ khí của súng máy phòng không 12.7mm là hệ thống ngắm truyền thống; hoạt động hoàn toàn bằng các bộ phận cơ khí...,sung12ly7.glb,,thuyetminh_12ly7.mp3,
-model,3,BI ĐÔNG NHÔM,Đây là bi đông nhôm; một vật dụng cá nhân quen thuộc của bộ đội; dùng để chứa và bảo quản nước uống...,bidong.glb,,thuyetminh_bidong.mp3,
-model,9,MÁY ẢNH ARYKA 608,Máy ảnh ARYKA 608 là thiết bị chụp ảnh chuyên dụng; được sử dụng để ghi lại hình ảnh phục vụ công tác chuyên môn...,mayanh.glb,,thuyetminh_mayanh.mp3,
+image,0,?/C NGUY?N PHAN VINH,Sinh n?m: 1933; M?t n?m: 1968; Anh h�ng L?c l??ng v? trang nh�n d�n; s? quan H?i qu�n Nh�n d�n Vi?t Nam...,,,thuyetminh1.mp3,
+video,0,B�N GIAO TH?Y L�I,Trung t�m B?KT V�ng 3 b�n giao th?y l�i cho nhi?m v? di?n t?p n?m 2024,video1.mp4,,thuyetminh_video1.mp3,vid_2
+model,2,C? C?U NG?M C? KH�,C? c?u ng?m c? kh� c?a s�ng m�y ph�ng kh�ng 12.7mm l� h? th?ng ng?m truy?n th?ng; ho?t ??ng ho�n to�n b?ng c�c b? ph?n c? kh�...,sung12ly7.glb,,thuyetminh_12ly7.mp3,
+model,3,BI ?�NG NH�M,?�y l� bi ?�ng nh�m; m?t v?t d?ng c� nh�n quen thu?c c?a b? ??i; d�ng ?? ch?a v� b?o qu?n n??c u?ng...,bidong.glb,,thuyetminh_bidong.mp3,
+model,9,M�Y ?NH ARYKA 608,M�y ?nh ARYKA 608 l� thi?t b? ch?p ?nh chuy�n d?ng; ???c s? d?ng ?? ghi l?i h�nh ?nh ph?c v? c�ng t�c chuy�n m�n...,mayanh.glb,,thuyetminh_mayanh.mp3,
 webm-overlay,1,,,lichsu.webm,,,vid_pano_main
-dual-model,4,QUÂN PHỤC HẢI QUÂN,Giới thiệu bộ quân phục sĩ quan cấp tá và quân phục dã chiến. Thiết kế trang trọng; uy nghiêm...,tieulenam.glb,tieulenu.glb,thuyetminh_mayanh.mp3,
+dual-model,4,QU�N PH?C H?I QU�N,Gi?i thi?u b? qu�n ph?c s? quan c?p t� v� qu�n ph?c d� chi?n. Thi?t k? trang tr?ng; uy nghi�m...,tieulenam.glb,tieulenu.glb,thuyetminh_mayanh.mp3,
