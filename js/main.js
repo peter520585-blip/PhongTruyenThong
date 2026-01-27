@@ -1,8 +1,19 @@
-/* js/main.js - FIX LỖI CHỤP NHẦM VIDEO TƯ LIỆU */
+/* js/main.js */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ async
   const scene = document.querySelector('a-scene');
   const assetsContainer = document.querySelector('a-assets');
+
+  // --- GỌI HÀM ĐỌC DỮ LIỆU TỪ FILE CSV ---
+  // Code sẽ tự tìm file js/database.csv để đọc
+  const AR_DATABASE = await fetchDatabase(); 
+  
+  console.log("Dữ liệu đã tải:", AR_DATABASE); // Kiểm tra xem đọc được chưa
+
+  if (!AR_DATABASE || AR_DATABASE.length === 0) {
+      console.warn("Không có dữ liệu nào trong file CSV!");
+      return;
+  }
 
   // --- 1. GIỮ NGUYÊN LOGIC DATABASE CŨ ---
   function createOverlay(item, delay) {

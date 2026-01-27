@@ -1,0 +1,8 @@
+type,targetIndex,title,desc,file_main,file_sub,audio_desc,video_id
+image,0,Đ/C NGUYỄN PHAN VINH,Sinh năm: 1933; Mất năm: 1968; Anh hùng Lực lượng vũ trang nhân dân; sĩ quan Hải quân Nhân dân Việt Nam...,,,thuyetminh1.mp3,
+video,0,BÀN GIAO THỦY LÔI,Trung tâm BĐKT Vùng 3 bàn giao thủy lôi cho nhiệm vụ diễn tập năm 2024,video1.mp4,,thuyetminh_video1.mp3,vid_2
+model,2,CƠ CẤU NGẮM CƠ KHÍ,Cơ cấu ngắm cơ khí của súng máy phòng không 12.7mm là hệ thống ngắm truyền thống; hoạt động hoàn toàn bằng các bộ phận cơ khí...,sung12ly7.glb,,thuyetminh_12ly7.mp3,
+model,3,BI ĐÔNG NHÔM,Đây là bi đông nhôm; một vật dụng cá nhân quen thuộc của bộ đội; dùng để chứa và bảo quản nước uống...,bidong.glb,,thuyetminh_bidong.mp3,
+model,9,MÁY ẢNH ARYKA 608,Máy ảnh ARYKA 608 là thiết bị chụp ảnh chuyên dụng; được sử dụng để ghi lại hình ảnh phục vụ công tác chuyên môn...,mayanh.glb,,thuyetminh_mayanh.mp3,
+webm-overlay,1,,,lichsu.webm,,,vid_pano_main
+dual-model,4,QUÂN PHỤC HẢI QUÂN,Giới thiệu bộ quân phục sĩ quan cấp tá và quân phục dã chiến. Thiết kế trang trọng; uy nghiêm...,tieulenam.glb,tieulenu.glb,thuyetminh_mayanh.mp3,
