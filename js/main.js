@@ -65,10 +65,10 @@ AFRAME.registerComponent('interactive-model', {
             const currentY = e.touches[0].clientY;
             
             // Xoay Ngang (Trục Y)
-            this.el.object3D.rotation.y += (currentX - this.lastX) * 0.005; 
+            this.el.object3D.rotation.y -= (currentX - this.lastX) * 0.005; 
             
             // Xoay Dọc (Trục X) - ĐÃ SỬA: Đổi dấu += thành -= để đảo chiều lại cho thuận
-            this.el.object3D.rotation.x -= (currentY - this.lastY) * 0.005; 
+            this.el.object3D.rotation.x += (currentY - this.lastY) * 0.005; 
 
             // (Tùy chọn) Giới hạn góc ngẩng để không bị lộn vòng quá đà
             // this.el.object3D.rotation.x = Math.min(Math.max(this.el.object3D.rotation.x, -1.0), 1.0);
