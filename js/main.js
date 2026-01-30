@@ -1,5 +1,49 @@
 /* js/main.js */
+AFRAME.registerComponent('auto-rotate-reset', {
+  schema: {
+    speed: { type: 'number', default: 0.5 }, // Tốc độ xoay
+    scale: { type: 'vec3', default: {x: 0.6, y: 0.6, z: 0.6} } // Kích thước chuẩn để reset về
+  },
+  init: function () {
+    this.isInteracting = false;
+    
+    // Khi chạm vào: Dừng tự xoay
+    const startHandler = () => { this.isInteracting = true; };
+    
+    // Khi thả tay: Tiếp tục xoay + Reset kích thước
+    const endHandler = () => { 
+        this.isInteracting = false; 
+        this.resetModel();
+    };
 
+    this.el.sceneEl.addEventListener('touchstart', startHandler);
+    this.el.sceneEl.addEventListener('mousedown', startHandler);
+    this.el.sceneEl.addEventListener('touchend', endHandler);
+    this.el.sceneEl.addEventListener('mouseup', endHandler);
+  },
+
+  tick: function (t, dt) {
+    // Nếu không ai chạm -> Tự xoay
+    if (!this.isInteracting) {
+      this.el.object3D.rotation.y += this.data.speed * (dt / 1000);
+    }
+  },
+
+  resetModel: function() {
+    // Hiệu ứng "Nảy" về kích thước chuẩn (scale 0.6)
+    const current = this.el.object3D.scale;
+    const target = this.data.scale;
+
+    this.el.removeAttribute('animation__reset');
+    this.el.setAttribute('animation__reset', {
+        property: 'scale',
+        from: `${current.x} ${current.y} ${current.z}`,
+        to: `${target.x} ${target.y} ${target.z}`,
+        dur: 500,
+        easing: 'easeOutElastic' // Hiệu ứng nảy đàn hồi
+    });
+  }
+});
 document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ async
   const scene = document.querySelector('a-scene');
   const assetsContainer = document.querySelector('a-assets');
@@ -33,13 +77,32 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
     if (item.type === 'image') {
       targetEl.appendChild(createOverlay(item, 500));
     }
-    // LOẠI 2: MÔ HÌNH
+    // LOẠI 2: MÔ HÌNH (ĐÃ SỬA: ZOOM/XOAY THOẢI MÁI -> THẢ RA TỰ RESET)
+    // ============================================================
     else if (item.type === 'model') {
+      // 1. Kích hoạt bộ cảm ứng cử chỉ cho cả màn hình (nếu chưa có)
+      if (!scene.hasAttribute('gesture-detector')) {
+        scene.setAttribute('gesture-detector', '');
+      }
+
       const modelContainer = document.createElement('a-entity');
+      
+      // Hiệu ứng hiện ra (Giữ nguyên của bạn)
+      // Lưu ý: finalScale ở đây là 0.6 -> Ta sẽ dùng số 0.6 này để reset
       modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0 0.5; finalPos: 0 0 0.5`);
-      modelContainer.setAttribute('slow-spin', '');
+      
+      // --- PHẦN THAY ĐỔI ---
+      // Xóa 'slow-spin', thay bằng bộ điều khiển thông minh
+      // minScale/maxScale: Giới hạn độ to nhỏ khi zoom
+      modelContainer.setAttribute('gesture-handler', 'minScale: 0.1; maxScale: 5; rotationFactor: 0'); // rotationFactor: 0 để tránh bị xung đột xoay
+      
+      // scale: 0.6 0.6 0.6 là kích thước chuẩn bạn muốn nó quay về
+      modelContainer.setAttribute('auto-rotate-reset', 'speed: 0.5; scale: 0.6 0.6 0.6'); 
+      // ---------------------
+
       const model = document.createElement('a-entity');
       model.setAttribute('gltf-model', `url(${item.modelSrc})`);
+      // Đặt xoay mặc định về 0
       model.setAttribute('rotation', '0 0 0');
       model.setAttribute('transparent-model', 'opacity: 0.9');
       
