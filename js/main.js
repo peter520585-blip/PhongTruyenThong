@@ -2,98 +2,129 @@
 AFRAME.registerComponent('interactive-model', {
   schema: {
     speed: { type: 'number', default: 0.5 },      // Tốc độ tự xoay
-    resetScale: { type: 'vec3', default: {x: 0.6, y: 0.6, z: 0.6} } // Kích thước chuẩn
+    resetScale: { type: 'vec3', default: {x: 0.6, y: 0.6, z: 0.6} }, // Kích thước chuẩn
+    minScale: { type: 'number', default: 0.1 },   // Bé nhất
+    maxScale: { type: 'number', default: 5.0 }    // To nhất
   },
   init: function () {
     this.isInteracting = false;
+    this.isZooming = false; // Biến kiểm tra xem có đang zoom không
+    
+    // Biến cho Xoay
     this.lastX = 0;
     this.lastY = 0;
     
-    // 1. SỰ KIỆN CHẠM (BẮT ĐẦU)
+    // Biến cho Zoom
+    this.startDistance = 0;
+    this.startScale = new THREE.Vector3();
+
+    // 1. SỰ KIỆN CHẠM (TOUCHSTART)
     this.el.sceneEl.addEventListener('touchstart', (e) => {
-        // Có ngón tay chạm vào (dù 1 hay 2 ngón) đều dừng tự xoay
         this.isInteracting = true;
-        
-        // Lưu vị trí ngón tay đầu tiên để tính toán xoay
-        if (e.touches.length > 0) {
+
+        // TRƯỜNG HỢP 1: Chạm 1 ngón -> Chuẩn bị XOAY
+        if (e.touches.length === 1) {
             this.lastX = e.touches[0].clientX;
             this.lastY = e.touches[0].clientY;
+            this.isZooming = false;
+        }
+        
+        // TRƯỜNG HỢP 2: Chạm 2 ngón -> Chuẩn bị ZOOM
+        if (e.touches.length === 2) {
+            this.isZooming = true;
+            
+            // Tính khoảng cách giữa 2 ngón tay (Pytago)
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            this.startDistance = Math.sqrt(dx*dx + dy*dy);
+            
+            // Lưu kích thước hiện tại của mô hình
+            this.startScale.copy(this.el.object3D.scale);
         }
     });
 
-    // 2. SỰ KIỆN DI CHUYỂN (XOAY TAY)
+    // 2. SỰ KIỆN DI CHUYỂN (TOUCHMOVE)
     this.el.sceneEl.addEventListener('touchmove', (e) => {
-        // Chỉ xoay khi dùng 1 ngón tay (2 ngón là để Zoom do thư viện lo)
-        if (this.isInteracting && e.touches.length === 1) {
+        if (!this.isInteracting) return;
+
+        // XỬ LÝ XOAY (Chỉ khi có 1 ngón và không zoom)
+        if (e.touches.length === 1 && !this.isZooming) {
             const currentX = e.touches[0].clientX;
             const currentY = e.touches[0].clientY;
             
             const deltaX = currentX - this.lastX;
             const deltaY = currentY - this.lastY;
             
-            // Xoay ngang (Trục Y): Vuốt trái/phải
-            this.el.object3D.rotation.y += deltaX * 0.005; 
-            
-            // Xoay dọc (Trục X): Vuốt lên/xuống -> Nhìn đỉnh hoặc đáy
-            this.el.object3D.rotation.x += deltaY * 0.005;
-
-            // [Tùy chọn] Giới hạn góc xoay dọc để không bị lộn ngược đầu
-            // Giới hạn từ -90 độ đến +90 độ (tính bằng radian: -1.5 đến 1.5)
-            // this.el.object3D.rotation.x = Math.min(Math.max(this.el.object3D.rotation.x, -1.0), 1.0);
+            this.el.object3D.rotation.y += deltaX * 0.005; // Xoay trái phải
+            this.el.object3D.rotation.x += deltaY * 0.005; // Xoay lên xuống
             
             this.lastX = currentX;
             this.lastY = currentY;
         }
+        
+        // XỬ LÝ ZOOM (Khi có 2 ngón)
+        if (e.touches.length === 2) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const newDistance = Math.sqrt(dx*dx + dy*dy);
+            
+            if (this.startDistance === 0) return;
+            
+            // Tỷ lệ phóng to = Khoảng cách mới / Khoảng cách cũ
+            const scaleFactor = newDistance / this.startDistance;
+            
+            // Tính toán kích thước mới
+            const newX = this.startScale.x * scaleFactor;
+            const newY = this.startScale.y * scaleFactor;
+            const newZ = this.startScale.z * scaleFactor;
+            
+            // Giới hạn Min/Max để không bị quá bé hoặc quá to
+            if (newX > this.data.minScale && newX < this.data.maxScale) {
+                this.el.object3D.scale.set(newX, newY, newZ);
+            }
+        }
     });
 
-    // 3. SỰ KIỆN THẢ TAY (RESET)
-    const endHandler = () => {
-        if (this.isInteracting) {
-            this.isInteracting = false;
-            this.resetModel(); // Gọi hàm trả về
+    // 3. SỰ KIỆN THẢ TAY (TOUCHEND)
+    const endHandler = (e) => {
+        // Khi nhấc hết tay ra (touches = 0) thì mới Reset
+        if (e.touches.length === 0) {
+            if (this.isInteracting) {
+                this.isInteracting = false;
+                this.isZooming = false;
+                this.resetModel(); // Tự động trả về cũ
+            }
         }
     };
     this.el.sceneEl.addEventListener('touchend', endHandler);
-    this.el.sceneEl.addEventListener('mouseup', endHandler);
   },
 
-  // 4. TỰ XOAY KHI RẢNH
+  // 4. TỰ ĐỘNG XOAY
   tick: function (t, dt) {
     if (!this.isInteracting) {
       this.el.object3D.rotation.y += this.data.speed * (dt / 1000);
     }
   },
 
-  // 5. HIỆU ỨNG HỒI PHỤC
+  // 5. HÀM RESET
   resetModel: function() {
-    // A. Reset Kích thước (Scale) về chuẩn
-    const currentS = this.el.object3D.scale;
-    const targetS = this.data.resetScale;
+    // Reset Kích thước
+    const current = this.el.object3D.scale;
+    const target = this.data.resetScale;
 
     this.el.removeAttribute('animation__resetScale');
     this.el.setAttribute('animation__resetScale', {
         property: 'scale',
-        from: `${currentS.x} ${currentS.y} ${currentS.z}`,
-        to: `${targetS.x} ${targetS.y} ${targetS.z}`,
+        from: `${current.x} ${current.y} ${current.z}`,
+        to: `${target.x} ${target.y} ${target.z}`,
         dur: 600,
         easing: 'easeOutElastic'
     });
 
-    // B. Reset Góc nghiêng (Trục X) về 0 (đứng thẳng lại)
-    // Lưu ý: Không reset trục Y để nó quay tiếp chỗ đang đứng
-    const currentRotX = this.el.object3D.rotation.x * (180/Math.PI); // Đổi ra độ để animation hiểu
-    
+    // Reset góc nghiêng đầu (trục X)
     this.el.removeAttribute('animation__resetRotX');
     this.el.setAttribute('animation__resetRotX', {
-        property: 'rotation.x', // Dựng đầu dậy
-        to: 0,
-        dur: 500,
-        easing: 'easeOutQuad'
-    });
-    
-     this.el.removeAttribute('animation__resetRotZ');
-    this.el.setAttribute('animation__resetRotZ', {
-        property: 'rotation.z', // Cân bằng 2 bên
+        property: 'rotation.x',
         to: 0,
         dur: 500,
         easing: 'easeOutQuad'
@@ -135,28 +166,24 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
     }
     // LOẠI 2: MÔ HÌNH (ZOOM + XOAY 360 + TỰ RESET)
     // ============================================================
+    // LOẠI 2: MÔ HÌNH (XOAY + ZOOM TỰ CODE)
+    // ============================================================
     else if (item.type === 'model') {
-      // 1. Kích hoạt cảm ứng cho Scene
-      if (!scene.hasAttribute('gesture-detector')) {
-        scene.setAttribute('gesture-detector', '');
-      }
+      
+      // [BỎ] Không cần dòng scene.setAttribute('gesture-detector'...) nữa
 
       const modelContainer = document.createElement('a-entity');
       
-      // Hiệu ứng hiện ra
+      // Hiệu ứng hiện ra (Giữ nguyên)
       modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0 0.5; finalPos: 0 0 0.5`);
       
       // --- CẤU HÌNH TƯƠNG TÁC ---
       
-      // 1. Gesture Handler: CHỈ DÙNG ĐỂ ZOOM
-      // rotationFactor: 0 -> Tắt chức năng xoay của thư viện này (để code mình tự lo)
-      // minScale/maxScale: Giới hạn độ zoom
-      modelContainer.setAttribute('gesture-handler', 'minScale: 0.1; maxScale: 5; rotationFactor: 0'); 
+      // [QUAN TRỌNG] Chỉ cần gọi đúng 1 dòng này là đủ cả Xoay và Zoom
+      // resetScale: phải trùng với finalScale ở trên (0.6)
+      modelContainer.setAttribute('interactive-model', 'speed: 0.5; resetScale: 0.6 0.6 0.6; minScale: 0.1; maxScale: 5.0'); 
       
-      // 2. Interactive Model: LO VIỆC XOAY 360 + TỰ QUAY + RESET
-      // Nhớ set resetScale giống với finalScale ở trên (0.6)
-      modelContainer.setAttribute('interactive-model', 'speed: 0.5; resetScale: 0.6 0.6 0.6'); 
-      
+      // [BỎ] Xóa dòng setAttribute('gesture-handler'...) đi nhé!
       // --------------------------
 
       const model = document.createElement('a-entity');
