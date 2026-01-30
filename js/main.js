@@ -3,42 +3,50 @@ AFRAME.registerComponent('interactive-model', {
   schema: {
     speed: { type: 'number', default: 0.5 },      // Tốc độ tự xoay
     resetScale: { type: 'vec3', default: {x: 0.6, y: 0.6, z: 0.6} }, // Kích thước chuẩn
-    minScale: { type: 'number', default: 0.1 },   // Bé nhất
-    maxScale: { type: 'number', default: 5.0 }    // To nhất
+    minScale: { type: 'number', default: 0.1 },   // Zoom bé nhất
+    maxScale: { type: 'number', default: 5.0 },   // Zoom to nhất
+    delay: { type: 'number', default: 5000 },     // Thời gian chờ (5000ms = 5 giây)
+    smoothDuration: { type: 'number', default: 1500 } // Thời gian trượt về cũ (1.5 giây)
   },
   init: function () {
-    this.isInteracting = false;
-    this.isZooming = false; // Biến kiểm tra xem có đang zoom không
+    // Cờ trạng thái
+    this.isInteracting = false; // Đang chạm tay?
+    this.isResetting = false;   // Đang trong quá trình trượt về cũ?
+    this.timer = null;          // Biến đếm thời gian
     
-    // Biến cho Xoay
+    // Biến tính toán Xoay & Zoom
     this.lastX = 0;
     this.lastY = 0;
-    
-    // Biến cho Zoom
     this.startDistance = 0;
     this.startScale = new THREE.Vector3();
+    this.isZooming = false;
 
     // 1. SỰ KIỆN CHẠM (TOUCHSTART)
     this.el.sceneEl.addEventListener('touchstart', (e) => {
+        // Hủy bỏ việc đếm ngược 5s (nếu đang đếm)
+        if (this.timer) clearTimeout(this.timer);
+        
+        // Ngắt ngay quá trình tự động reset (nếu đang chạy) để người dùng giành quyền kiểm soát
+        if (this.isResetting) {
+             this.el.removeAttribute('animation__resetScale');
+             this.el.removeAttribute('animation__resetRotX');
+             this.el.removeAttribute('animation__resetRotZ');
+             this.isResetting = false;
+        }
+
         this.isInteracting = true;
 
-        // TRƯỜNG HỢP 1: Chạm 1 ngón -> Chuẩn bị XOAY
+        // Xử lý logic Xoay (1 ngón) hoặc Zoom (2 ngón)
         if (e.touches.length === 1) {
             this.lastX = e.touches[0].clientX;
             this.lastY = e.touches[0].clientY;
             this.isZooming = false;
         }
-        
-        // TRƯỜNG HỢP 2: Chạm 2 ngón -> Chuẩn bị ZOOM
         if (e.touches.length === 2) {
             this.isZooming = true;
-            
-            // Tính khoảng cách giữa 2 ngón tay (Pytago)
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
             this.startDistance = Math.sqrt(dx*dx + dy*dy);
-            
-            // Lưu kích thước hiện tại của mô hình
             this.startScale.copy(this.el.object3D.scale);
         }
     });
@@ -47,88 +55,99 @@ AFRAME.registerComponent('interactive-model', {
     this.el.sceneEl.addEventListener('touchmove', (e) => {
         if (!this.isInteracting) return;
 
-        // XỬ LÝ XOAY (Chỉ khi có 1 ngón và không zoom)
+        // Logic Xoay
         if (e.touches.length === 1 && !this.isZooming) {
             const currentX = e.touches[0].clientX;
             const currentY = e.touches[0].clientY;
             
-            const deltaX = currentX - this.lastX;
-            const deltaY = currentY - this.lastY;
-            
-            this.el.object3D.rotation.y += deltaX * 0.005; // Xoay trái phải
-            this.el.object3D.rotation.x += deltaY * 0.005; // Xoay lên xuống
+            // Xoay trục Y (Ngang) và X (Dọc)
+            this.el.object3D.rotation.y += (currentX - this.lastX) * 0.005; 
+            this.el.object3D.rotation.x += (currentY - this.lastY) * 0.005;
             
             this.lastX = currentX;
             this.lastY = currentY;
         }
         
-        // XỬ LÝ ZOOM (Khi có 2 ngón)
+        // Logic Zoom
         if (e.touches.length === 2) {
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
             const newDistance = Math.sqrt(dx*dx + dy*dy);
             
             if (this.startDistance === 0) return;
-            
-            // Tỷ lệ phóng to = Khoảng cách mới / Khoảng cách cũ
             const scaleFactor = newDistance / this.startDistance;
             
-            // Tính toán kích thước mới
             const newX = this.startScale.x * scaleFactor;
             const newY = this.startScale.y * scaleFactor;
             const newZ = this.startScale.z * scaleFactor;
             
-            // Giới hạn Min/Max để không bị quá bé hoặc quá to
             if (newX > this.data.minScale && newX < this.data.maxScale) {
                 this.el.object3D.scale.set(newX, newY, newZ);
             }
         }
     });
 
-    // 3. SỰ KIỆN THẢ TAY (TOUCHEND)
+    // 3. SỰ KIỆN THẢ TAY (TOUCHEND) - QUAN TRỌNG NHẤT
     const endHandler = (e) => {
-        // Khi nhấc hết tay ra (touches = 0) thì mới Reset
-        if (e.touches.length === 0) {
-            if (this.isInteracting) {
-                this.isInteracting = false;
-                this.isZooming = false;
-                this.resetModel(); // Tự động trả về cũ
-            }
+        if (e.touches.length === 0) { // Khi không còn ngón tay nào
+            this.isInteracting = false;
+            this.isZooming = false;
+            
+            // BẮT ĐẦU ĐẾM 5 GIÂY
+            // Nếu trong 5s này người dùng chạm lại, hàm touchstart ở trên sẽ hủy cái timer này
+            this.timer = setTimeout(() => {
+                this.resetModelSmoothly(); // Sau 5s thì gọi hàm reset
+            }, this.data.delay);
         }
     };
     this.el.sceneEl.addEventListener('touchend', endHandler);
   },
 
-  // 4. TỰ ĐỘNG XOAY
+  // 4. VÒNG LẶP (TỰ XOAY)
   tick: function (t, dt) {
-    if (!this.isInteracting) {
+    // Chỉ tự xoay khi:
+    // 1. Không ai chạm (Interacting = false)
+    // 2. KHÔNG đang trong quá trình trượt về cũ (Resetting = false)
+    if (!this.isInteracting && !this.isResetting) {
       this.el.object3D.rotation.y += this.data.speed * (dt / 1000);
     }
   },
 
-  // 5. HÀM RESET
-  resetModel: function() {
-    // Reset Kích thước
-    const current = this.el.object3D.scale;
-    const target = this.data.resetScale;
+  // 5. HÀM RESET MƯỢT MÀ
+  resetModelSmoothly: function() {
+    this.isResetting = true; // Báo hiệu: "Tao đang bận reset, đừng tự xoay vội"
 
+    // A. Animation cho Scale (Kích thước)
+    const currentS = this.el.object3D.scale;
+    const targetS = this.data.resetScale;
+    
     this.el.removeAttribute('animation__resetScale');
     this.el.setAttribute('animation__resetScale', {
         property: 'scale',
-        from: `${current.x} ${current.y} ${current.z}`,
-        to: `${target.x} ${target.y} ${target.z}`,
-        dur: 600,
-        easing: 'easeOutElastic'
+        from: `${currentS.x} ${currentS.y} ${currentS.z}`, // Từ kích thước hiện tại
+        to: `${targetS.x} ${targetS.y} ${targetS.z}`,       // Về kích thước chuẩn
+        dur: this.data.smoothDuration,                      // Mất 1.5 giây
+        easing: 'easeInOutQuad'                             // Hiệu ứng lướt êm
     });
 
-    // Reset góc nghiêng đầu (trục X)
+    // B. Animation cho Góc nghiêng (Dựng đầu dậy)
+    // Lưu ý: Ta không reset Rotation Y (trục xoay tròn) về 0, 
+    // mà để nó tự nhiên, chỉ dựng thẳng trục X và Z thôi.
+    const currentRotX = this.el.object3D.rotation.x * (180/Math.PI);
+    
     this.el.removeAttribute('animation__resetRotX');
     this.el.setAttribute('animation__resetRotX', {
         property: 'rotation.x',
+        from: currentRotX,
         to: 0,
-        dur: 500,
-        easing: 'easeOutQuad'
+        dur: this.data.smoothDuration,
+        easing: 'easeInOutQuad'
     });
+    
+    // C. Sau khi chạy xong animation (1.5s) thì mới cho tự xoay lại
+    setTimeout(() => {
+        this.isResetting = false; // Xong rồi, cho phép tick() chạy lại để tự xoay
+    }, this.data.smoothDuration);
   }
 });
 document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ async
