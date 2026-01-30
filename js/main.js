@@ -7,73 +7,93 @@ AFRAME.registerComponent('interactive-model', {
   init: function () {
     this.isInteracting = false;
     this.lastX = 0;
-    this.initialScale = this.el.object3D.scale.clone(); // Lưu kích thước ban đầu
+    this.lastY = 0;
     
-    // 1. XỬ LÝ SỰ KIỆN CHẠM (TOUCH)
+    // 1. SỰ KIỆN CHẠM (BẮT ĐẦU)
     this.el.sceneEl.addEventListener('touchstart', (e) => {
-        // Nếu chạm 1 ngón -> Là xoay
-        if (e.touches.length === 1) {
-            this.isInteracting = true;
+        // Có ngón tay chạm vào (dù 1 hay 2 ngón) đều dừng tự xoay
+        this.isInteracting = true;
+        
+        // Lưu vị trí ngón tay đầu tiên để tính toán xoay
+        if (e.touches.length > 0) {
             this.lastX = e.touches[0].clientX;
-        }
-        // Nếu chạm 2 ngón -> Là Zoom (A-Frame tự xử lý hoặc dùng thư viện, nhưng ta tạm dừng xoay đã)
-        if (e.touches.length === 2) {
-             this.isInteracting = true;
+            this.lastY = e.touches[0].clientY;
         }
     });
 
-    // 2. XỬ LÝ KHI DI CHUYỂN NGÓN TAY (XOAY TAY)
+    // 2. SỰ KIỆN DI CHUYỂN (XOAY TAY)
     this.el.sceneEl.addEventListener('touchmove', (e) => {
+        // Chỉ xoay khi dùng 1 ngón tay (2 ngón là để Zoom do thư viện lo)
         if (this.isInteracting && e.touches.length === 1) {
             const currentX = e.touches[0].clientX;
-            const deltaX = currentX - this.lastX;
+            const currentY = e.touches[0].clientY;
             
-            // Xoay mô hình theo ngón tay
+            const deltaX = currentX - this.lastX;
+            const deltaY = currentY - this.lastY;
+            
+            // Xoay ngang (Trục Y): Vuốt trái/phải
             this.el.object3D.rotation.y += deltaX * 0.005; 
             
+            // Xoay dọc (Trục X): Vuốt lên/xuống -> Nhìn đỉnh hoặc đáy
+            this.el.object3D.rotation.x += deltaY * 0.005;
+
+            // [Tùy chọn] Giới hạn góc xoay dọc để không bị lộn ngược đầu
+            // Giới hạn từ -90 độ đến +90 độ (tính bằng radian: -1.5 đến 1.5)
+            // this.el.object3D.rotation.x = Math.min(Math.max(this.el.object3D.rotation.x, -1.0), 1.0);
+            
             this.lastX = currentX;
+            this.lastY = currentY;
         }
     });
 
-    // 3. XỬ LÝ KHI THẢ TAY RA (RESET)
+    // 3. SỰ KIỆN THẢ TAY (RESET)
     const endHandler = () => {
         if (this.isInteracting) {
             this.isInteracting = false;
-            this.resetModel(); // Gọi hàm trả về vị trí cũ
+            this.resetModel(); // Gọi hàm trả về
         }
     };
     this.el.sceneEl.addEventListener('touchend', endHandler);
-    this.el.sceneEl.addEventListener('mouseup', endHandler); // Cho máy tính
+    this.el.sceneEl.addEventListener('mouseup', endHandler);
   },
 
-  // 4. HÀM TỰ XOAY (Chạy liên tục mỗi khung hình)
+  // 4. TỰ XOAY KHI RẢNH
   tick: function (t, dt) {
-    // Chỉ tự xoay khi KHÔNG có ai chạm vào
     if (!this.isInteracting) {
       this.el.object3D.rotation.y += this.data.speed * (dt / 1000);
     }
   },
 
-  // 5. HIỆU ỨNG TRẢ VỀ CŨ
+  // 5. HIỆU ỨNG HỒI PHỤC
   resetModel: function() {
-    // Reset Kích thước (Scale)
-    const current = this.el.object3D.scale;
-    const target = this.data.resetScale;
+    // A. Reset Kích thước (Scale) về chuẩn
+    const currentS = this.el.object3D.scale;
+    const targetS = this.data.resetScale;
 
     this.el.removeAttribute('animation__resetScale');
     this.el.setAttribute('animation__resetScale', {
         property: 'scale',
-        from: `${current.x} ${current.y} ${current.z}`,
-        to: `${target.x} ${target.y} ${target.z}`,
+        from: `${currentS.x} ${currentS.y} ${currentS.z}`,
+        to: `${targetS.x} ${targetS.y} ${targetS.z}`,
         dur: 600,
         easing: 'easeOutElastic'
     });
 
-    // Reset Góc nghiêng (chỉ dựng thẳng đầu, vẫn giữ góc xoay ngang)
-    // Để tránh mô hình bị nghiêng ngả
+    // B. Reset Góc nghiêng (Trục X) về 0 (đứng thẳng lại)
+    // Lưu ý: Không reset trục Y để nó quay tiếp chỗ đang đứng
+    const currentRotX = this.el.object3D.rotation.x * (180/Math.PI); // Đổi ra độ để animation hiểu
+    
     this.el.removeAttribute('animation__resetRotX');
     this.el.setAttribute('animation__resetRotX', {
-        property: 'rotation.x',
+        property: 'rotation.x', // Dựng đầu dậy
+        to: 0,
+        dur: 500,
+        easing: 'easeOutQuad'
+    });
+    
+     this.el.removeAttribute('animation__resetRotZ');
+    this.el.setAttribute('animation__resetRotZ', {
+        property: 'rotation.z', // Cân bằng 2 bên
         to: 0,
         dur: 500,
         easing: 'easeOutQuad'
@@ -113,10 +133,10 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
     if (item.type === 'image') {
       targetEl.appendChild(createOverlay(item, 500));
     }
-    // LOẠI 2: MÔ HÌNH (XOAY TAY + ZOOM + TỰ RESET)
+    // LOẠI 2: MÔ HÌNH (ZOOM + XOAY 360 + TỰ RESET)
     // ============================================================
     else if (item.type === 'model') {
-      // 1. Kích hoạt bộ cảm ứng cử chỉ cho Scene (BẮT BUỘC ĐỂ ZOOM)
+      // 1. Kích hoạt cảm ứng cho Scene
       if (!scene.hasAttribute('gesture-detector')) {
         scene.setAttribute('gesture-detector', '');
       }
@@ -126,15 +146,18 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
       // Hiệu ứng hiện ra
       modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0 0.5; finalPos: 0 0 0.5`);
       
-      // --- PHẦN QUAN TRỌNG ---
-      // 1. Cho phép Zoom (gesture-handler lo việc này)
+      // --- CẤU HÌNH TƯƠNG TÁC ---
+      
+      // 1. Gesture Handler: CHỈ DÙNG ĐỂ ZOOM
+      // rotationFactor: 0 -> Tắt chức năng xoay của thư viện này (để code mình tự lo)
+      // minScale/maxScale: Giới hạn độ zoom
       modelContainer.setAttribute('gesture-handler', 'minScale: 0.1; maxScale: 5; rotationFactor: 0'); 
-      // *Lưu ý: rotationFactor: 0 để tắt xoay của thư viện, dùng xoay của mình viết cho mượt
-
-      // 2. Gắn bộ điều khiển của mình (Tự xoay + Xoay tay 1 ngón + Reset)
-      // Nhớ sửa resetScale cho khớp với finalScale ở trên (đều là 0.6)
+      
+      // 2. Interactive Model: LO VIỆC XOAY 360 + TỰ QUAY + RESET
+      // Nhớ set resetScale giống với finalScale ở trên (0.6)
       modelContainer.setAttribute('interactive-model', 'speed: 0.5; resetScale: 0.6 0.6 0.6'); 
-      // -----------------------
+      
+      // --------------------------
 
       const model = document.createElement('a-entity');
       model.setAttribute('gltf-model', `url(${item.modelSrc})`);
