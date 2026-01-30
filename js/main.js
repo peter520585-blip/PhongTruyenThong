@@ -1,46 +1,82 @@
 /* js/main.js */
-AFRAME.registerComponent('auto-rotate-reset', {
+AFRAME.registerComponent('interactive-model', {
   schema: {
-    speed: { type: 'number', default: 0.5 }, // Tốc độ xoay
-    scale: { type: 'vec3', default: {x: 0.6, y: 0.6, z: 0.6} } // Kích thước chuẩn để reset về
+    speed: { type: 'number', default: 0.5 },      // Tốc độ tự xoay
+    resetScale: { type: 'vec3', default: {x: 0.6, y: 0.6, z: 0.6} } // Kích thước chuẩn
   },
   init: function () {
     this.isInteracting = false;
+    this.lastX = 0;
+    this.initialScale = this.el.object3D.scale.clone(); // Lưu kích thước ban đầu
     
-    // Khi chạm vào: Dừng tự xoay
-    const startHandler = () => { this.isInteracting = true; };
-    
-    // Khi thả tay: Tiếp tục xoay + Reset kích thước
-    const endHandler = () => { 
-        this.isInteracting = false; 
-        this.resetModel();
-    };
+    // 1. XỬ LÝ SỰ KIỆN CHẠM (TOUCH)
+    this.el.sceneEl.addEventListener('touchstart', (e) => {
+        // Nếu chạm 1 ngón -> Là xoay
+        if (e.touches.length === 1) {
+            this.isInteracting = true;
+            this.lastX = e.touches[0].clientX;
+        }
+        // Nếu chạm 2 ngón -> Là Zoom (A-Frame tự xử lý hoặc dùng thư viện, nhưng ta tạm dừng xoay đã)
+        if (e.touches.length === 2) {
+             this.isInteracting = true;
+        }
+    });
 
-    this.el.sceneEl.addEventListener('touchstart', startHandler);
-    this.el.sceneEl.addEventListener('mousedown', startHandler);
+    // 2. XỬ LÝ KHI DI CHUYỂN NGÓN TAY (XOAY TAY)
+    this.el.sceneEl.addEventListener('touchmove', (e) => {
+        if (this.isInteracting && e.touches.length === 1) {
+            const currentX = e.touches[0].clientX;
+            const deltaX = currentX - this.lastX;
+            
+            // Xoay mô hình theo ngón tay
+            this.el.object3D.rotation.y += deltaX * 0.005; 
+            
+            this.lastX = currentX;
+        }
+    });
+
+    // 3. XỬ LÝ KHI THẢ TAY RA (RESET)
+    const endHandler = () => {
+        if (this.isInteracting) {
+            this.isInteracting = false;
+            this.resetModel(); // Gọi hàm trả về vị trí cũ
+        }
+    };
     this.el.sceneEl.addEventListener('touchend', endHandler);
-    this.el.sceneEl.addEventListener('mouseup', endHandler);
+    this.el.sceneEl.addEventListener('mouseup', endHandler); // Cho máy tính
   },
 
+  // 4. HÀM TỰ XOAY (Chạy liên tục mỗi khung hình)
   tick: function (t, dt) {
-    // Nếu không ai chạm -> Tự xoay
+    // Chỉ tự xoay khi KHÔNG có ai chạm vào
     if (!this.isInteracting) {
       this.el.object3D.rotation.y += this.data.speed * (dt / 1000);
     }
   },
 
+  // 5. HIỆU ỨNG TRẢ VỀ CŨ
   resetModel: function() {
-    // Hiệu ứng "Nảy" về kích thước chuẩn (scale 0.6)
+    // Reset Kích thước (Scale)
     const current = this.el.object3D.scale;
-    const target = this.data.scale;
+    const target = this.data.resetScale;
 
-    this.el.removeAttribute('animation__reset');
-    this.el.setAttribute('animation__reset', {
+    this.el.removeAttribute('animation__resetScale');
+    this.el.setAttribute('animation__resetScale', {
         property: 'scale',
         from: `${current.x} ${current.y} ${current.z}`,
         to: `${target.x} ${target.y} ${target.z}`,
+        dur: 600,
+        easing: 'easeOutElastic'
+    });
+
+    // Reset Góc nghiêng (chỉ dựng thẳng đầu, vẫn giữ góc xoay ngang)
+    // Để tránh mô hình bị nghiêng ngả
+    this.el.removeAttribute('animation__resetRotX');
+    this.el.setAttribute('animation__resetRotX', {
+        property: 'rotation.x',
+        to: 0,
         dur: 500,
-        easing: 'easeOutElastic' // Hiệu ứng nảy đàn hồi
+        easing: 'easeOutQuad'
     });
   }
 });
@@ -77,32 +113,31 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
     if (item.type === 'image') {
       targetEl.appendChild(createOverlay(item, 500));
     }
-    // LOẠI 2: MÔ HÌNH (ĐÃ SỬA: ZOOM/XOAY THOẢI MÁI -> THẢ RA TỰ RESET)
+    // LOẠI 2: MÔ HÌNH (XOAY TAY + ZOOM + TỰ RESET)
     // ============================================================
     else if (item.type === 'model') {
-      // 1. Kích hoạt bộ cảm ứng cử chỉ cho cả màn hình (nếu chưa có)
+      // 1. Kích hoạt bộ cảm ứng cử chỉ cho Scene (BẮT BUỘC ĐỂ ZOOM)
       if (!scene.hasAttribute('gesture-detector')) {
         scene.setAttribute('gesture-detector', '');
       }
 
       const modelContainer = document.createElement('a-entity');
       
-      // Hiệu ứng hiện ra (Giữ nguyên của bạn)
-      // Lưu ý: finalScale ở đây là 0.6 -> Ta sẽ dùng số 0.6 này để reset
+      // Hiệu ứng hiện ra
       modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0 0.5; finalPos: 0 0 0.5`);
       
-      // --- PHẦN THAY ĐỔI ---
-      // Xóa 'slow-spin', thay bằng bộ điều khiển thông minh
-      // minScale/maxScale: Giới hạn độ to nhỏ khi zoom
-      modelContainer.setAttribute('gesture-handler', 'minScale: 0.1; maxScale: 5; rotationFactor: 0'); // rotationFactor: 0 để tránh bị xung đột xoay
-      
-      // scale: 0.6 0.6 0.6 là kích thước chuẩn bạn muốn nó quay về
-      modelContainer.setAttribute('auto-rotate-reset', 'speed: 0.5; scale: 0.6 0.6 0.6'); 
-      // ---------------------
+      // --- PHẦN QUAN TRỌNG ---
+      // 1. Cho phép Zoom (gesture-handler lo việc này)
+      modelContainer.setAttribute('gesture-handler', 'minScale: 0.1; maxScale: 5; rotationFactor: 0'); 
+      // *Lưu ý: rotationFactor: 0 để tắt xoay của thư viện, dùng xoay của mình viết cho mượt
+
+      // 2. Gắn bộ điều khiển của mình (Tự xoay + Xoay tay 1 ngón + Reset)
+      // Nhớ sửa resetScale cho khớp với finalScale ở trên (đều là 0.6)
+      modelContainer.setAttribute('interactive-model', 'speed: 0.5; resetScale: 0.6 0.6 0.6'); 
+      // -----------------------
 
       const model = document.createElement('a-entity');
       model.setAttribute('gltf-model', `url(${item.modelSrc})`);
-      // Đặt xoay mặc định về 0
       model.setAttribute('rotation', '0 0 0');
       model.setAttribute('transparent-model', 'opacity: 0.9');
       
