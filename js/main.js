@@ -212,7 +212,7 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
       // resetScale: phải trùng với finalScale ở trên (0.6)
       modelContainer.setAttribute('interactive-model', 'speed: 0.5; resetScale: 0.6 0.6 0.6; minScale: 0.1; maxScale: 5.0'); 
       
-      // [BỎ] Xóa dòng setAttribute('gesture-handler'...) đi nhé!
+      
       // --------------------------
 
       const model = document.createElement('a-entity');
@@ -313,47 +313,56 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
       // Gắn vào Target
       targetEl.appendChild(vidPlane);
     }
-    // LOẠI 5: DUAL MODEL (2 NGƯỜI MẪU NAM NỮ)
+   // ============================================================
+    // LOẠI 5: DUAL MODEL (TĨNH - KHÔNG XOAY - DỰNG ĐỨNG)
     // ============================================================
     else if (item.type === 'dual-model') {
-      // 1. Tạo cái VỎ CHỨA (Container) chung cho cả 2 người
-      // Hiệu ứng "reveal-model" sẽ áp dụng lên vỏ này -> Cả 2 cùng to lên 1 lúc
+      
       const container = document.createElement('a-entity');
       
-      // Cấu hình hiệu ứng xuất hiện (Giống model đơn nhưng chỉnh scale nhỏ hơn chút vì 2 người khá to)
-      // finalScale: 0.5 (Bạn có thể tăng giảm tùy độ to của file 3D)
+      // 1. CẤU HÌNH HIỆU ỨNG HIỆN RA (Giữ nguyên)
       container.setAttribute('reveal-model', `duration: 2500; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.5 0.5 0.5; startPos: 0 0 0; finalPos: 0 0 0`);
       
-      // Chỉnh xoay vỏ chứa nếu mô hình bị quay lưng lại (ví dụ xoay 180 độ y)
-      // container.setAttribute('rotation', '0 0 0'); 
+      // 2. CHỈNH HƯỚNG DỰNG ĐỨNG (QUAN TRỌNG NHẤT)
+      // Nếu đang bị nằm bẹp trên bàn, bạn hãy sửa số đầu tiên (Trục X)
+      // Thử 1 trong 2 trường hợp sau:
+      // Trường hợp A: '90 0 0' (Dựng đứng lên)
+      // Trường hợp B: '-90 0 0' (Nếu A bị lộn ngược đầu)
+      // Trường hợp C: '0 0 0' (Mặc định - nếu mô hình gốc đã đứng sẵn)
       
-      // LƯU Ý: Không thêm 'slow-spin' nên nó sẽ đứng yên.
+      container.setAttribute('rotation', '90 0 0'); // <--- SỬA DÒNG NÀY ĐỂ DỰNG ĐỨNG
+      
+      // [LƯU Ý] Tôi ĐÃ BỎ dòng 'interactive-model' và 'slow-spin' -> Nó sẽ đứng im.
 
-      // 2. Tạo Model NAM (Bên Trái)
-      const maleModel = document.createElement('a-entity');
-      maleModel.setAttribute('gltf-model', `url(${item.modelSrc_male})`);
-      // Dịch sang trái 0.4 đơn vị
-      maleModel.setAttribute('position', '-0.4 0 0'); 
-      // Dùng component trong suốt để fix lỗi hiển thị
-      maleModel.setAttribute('transparent-model', 'opacity: 1.0'); 
+      // 3. MODEL NAM
+      if (item.modelSrc_male) {
+          const maleModel = document.createElement('a-entity');
+          maleModel.setAttribute('gltf-model', `url(${item.modelSrc_male})`);
+          // position: '-0.4 0 0' (Lệch trái), '0 0.4 0' (Lên trên nếu cần), '0 0 0' (Gốc)
+          // Lưu ý: Khi đã dựng container lên 90 độ, trục Y và Z của con sẽ thay đổi theo.
+          // Bạn cứ để mặc định thế này trước xem sao.
+          maleModel.setAttribute('position', '-0.4 0 0'); 
+          maleModel.setAttribute('rotation', '0 0 0');
+          maleModel.setAttribute('transparent-model', 'opacity: 1.0'); 
+          maleModel.setAttribute('shadow', 'cast: true; receive: true');
+          container.appendChild(maleModel);
+      }
 
-      // 3. Tạo Model NỮ (Bên Phải)
-      const femaleModel = document.createElement('a-entity');
-      femaleModel.setAttribute('gltf-model', `url(${item.modelSrc_female})`);
-      // Dịch sang phải 0.4 đơn vị
-      femaleModel.setAttribute('position', '0.4 0 0'); 
-      femaleModel.setAttribute('transparent-model', 'opacity: 1.0');
+      // 4. MODEL NỮ
+      if (item.modelSrc_female) {
+          const femaleModel = document.createElement('a-entity');
+          femaleModel.setAttribute('gltf-model', `url(${item.modelSrc_female})`);
+          femaleModel.setAttribute('position', '0.4 0 0'); 
+          femaleModel.setAttribute('rotation', '0 0 0');
+          femaleModel.setAttribute('transparent-model', 'opacity: 1.0');
+          femaleModel.setAttribute('shadow', 'cast: true; receive: true');
+          container.appendChild(femaleModel);
+      }
 
-      // 4. Gắn 2 người vào VỎ
-      container.appendChild(maleModel);
-      container.appendChild(femaleModel);
-
-      // 5. Gắn VỎ vào Target
       targetEl.appendChild(container);
 
-      // 6. Hiển thị bảng thông tin (Giống chế độ cũ)
-      // Hiện bảng sau 2 giây (khi mô hình đã hiện xong)
-      targetEl.appendChild(createOverlay(item, 2000));   
+      // 5. Bảng thông tin (Vẫn hiện bình thường)
+      targetEl.appendChild(createOverlay(item, 2500));    
     }
 
     // ÂM THANH CHUNG
