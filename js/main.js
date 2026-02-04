@@ -330,7 +330,7 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
       // Trường hợp B: '-90 0 0' (Nếu A bị lộn ngược đầu)
       // Trường hợp C: '0 0 0' (Mặc định - nếu mô hình gốc đã đứng sẵn)
       
-      container.setAttribute('rotation', '90 0 0'); // <--- SỬA DÒNG NÀY ĐỂ DỰNG ĐỨNG
+      container.setAttribute('rotation', '75 0 0'); // <--- SỬA DÒNG NÀY ĐỂ DỰNG ĐỨNG
       
       // [LƯU Ý] Tôi ĐÃ BỎ dòng 'interactive-model' và 'slow-spin' -> Nó sẽ đứng im.
 
