@@ -254,26 +254,31 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
       
       targetEl.appendChild(vidPlane);
     }
-    // LOẠI 4: WEBM OVERLAY (AUTO FIT + CÓ NÚT CHỤP ẢNH)
+ // LOẠI 4: WEBM OVERLAY (ĐÃ FIX LỖI ĐỨNG IM & LƯU ẢNH)
     // ============================================================
     else if (item.type === 'webm-overlay') {
       // 1. Tạo Asset Video
       const vidAsset = document.createElement('video');
       vidAsset.setAttribute('id', item.videoId);
       vidAsset.setAttribute('src', item.videoSrc);
-      vidAsset.setAttribute('preload', 'auto');
+      vidAsset.setAttribute('preload', 'auto'); // Tải trước để đỡ bị đứng
       vidAsset.setAttribute('playsinline', '');
       vidAsset.setAttribute('webkit-playsinline', '');
       vidAsset.setAttribute('crossorigin', 'anonymous');
+      // [Mẹo] Mặc định tắt tiếng trước để dễ Auto Play, khi quét trúng sẽ bật tiếng sau
+      // vidAsset.muted = true; 
       assetsContainer.appendChild(vidAsset);
 
       // 2. Tạo tấm hiển thị (Plane)
       const vidPlane = document.createElement('a-plane');
       vidPlane.setAttribute('src', `#${item.videoId}`);
       
-      // Auto Fit kích thước
+      // [QUAN TRỌNG] Ẩn đi ngay từ đầu để tránh hiện khung hình đen hoặc đứng im
+      vidPlane.setAttribute('visible', 'false'); 
+
+      // Auto Fit kích thước (Giữ nguyên code của bạn)
       vidPlane.setAttribute('width', '1'); 
-      vidPlane.setAttribute('height', '0.5'); // Số tạm
+      vidPlane.setAttribute('height', '0.5'); 
       vidAsset.addEventListener('loadedmetadata', () => {
           if (vidAsset.videoWidth && vidAsset.videoHeight) {
               const ratio = vidAsset.videoHeight / vidAsset.videoWidth;
@@ -283,31 +288,51 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
 
       // Vị trí & Vật liệu
       vidPlane.setAttribute('position', '0 0 0.05');
+      // shader: flat giúp video sáng rõ không bị ảnh hưởng bởi ánh sáng môi trường
       vidPlane.setAttribute('material', 'shader: flat; transparent: true; depthWrite: false');
 
-      // 3. Logic điều khiển
+      // 3. Logic điều khiển (ĐÃ SỬA LẠI LOGIC)
       targetEl.addEventListener('targetFound', () => {
-        // --- [MỚI] HIỆN NÚT CHỤP ẢNH ---
+        // --- HIỆN NÚT CHỤP ẢNH ---
         const btnCapture = document.getElementById('btn-capture');
         if(btnCapture) btnCapture.style.display = 'block'; 
 
-        // Xử lý video
-        if (vidAsset.ended) { vidAsset.currentTime = 0; }
-        vidAsset.play().catch(e => {
-            if (!vidAsset.muted) {
+        // [FIX LỖI ĐỨNG IM]
+        // B1: Cho hiển thị tấm plane lên
+        vidPlane.setAttribute('visible', 'true');
+
+        // B2: Tua về đầu
+        vidAsset.currentTime = 0; 
+
+        // B3: Dùng Promise để ép chạy video
+        var playPromise = vidAsset.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.then(_ => {
+                // Video đã chạy thành công -> Bật tiếng lên (nếu đang tắt)
+                vidAsset.muted = false;
+            })
+            .catch(error => {
+                // Nếu bị chặn Autoplay -> Phải tắt tiếng mới cho chạy
+                console.log("Autoplay bị chặn, chuyển sang chế độ không tiếng");
                 vidAsset.muted = true;
                 vidAsset.play();
-            }
-        });
+            });
+        }
       });
 
       targetEl.addEventListener('targetLost', () => {
-        // --- [MỚI] ẨN NÚT CHỤP ẢNH ---
+        // --- ẨN NÚT CHỤP ẢNH ---
         const btnCapture = document.getElementById('btn-capture');
         if(btnCapture) btnCapture.style.display = 'none';
 
-        // Xử lý video
+        // [FIX LỖI LƯU ẢNH/DÍNH ẢNH]
+        // B1: Dừng video
         vidAsset.pause();
+        
+        // B2: [QUAN TRỌNG NHẤT] Ẩn tấm plane đi ngay lập tức
+        // Nếu không ẩn, nó sẽ giữ nguyên khung hình cuối cùng trên màn hình
+        vidPlane.setAttribute('visible', 'false');
       });
 
       // Gắn vào Target
