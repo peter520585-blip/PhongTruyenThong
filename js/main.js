@@ -450,27 +450,44 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
   });
 
   // KHI ẤN NÚT THOÁT (TIẾP TỤC QUÉT)
+  // KHI ẤN NÚT THOÁT (TIẾP TỤC QUÉT)
   btnExit.addEventListener('click', () => {
     // 1. Ẩn ảnh nền tĩnh -> Lộ ra camera thật
     bgFreeze.style.display = 'none';
-    bgFreeze.src = ""; // Giải phóng bộ nhớ ảnh
+    bgFreeze.src = ""; // Giải phóng bộ nhớ
 
-    // 2. Bật lại Tracking của MindAR
-    if (scene.systems['mindar-image-system']) {
-      scene.systems['mindar-image-system'].unpause();
-    }
-
-    // === [QUAN TRỌNG: SỬA LỖI ĐÈ HÌNH] ===
-    // Ép buộc tất cả các Target phải "Biến mất" ngay lập tức
-    // Việc này sẽ kích hoạt các sự kiện targetLost trong components.js 
-    // giúp tắt nhạc, tắt video và ẩn mô hình cũ đi.
+    // 2. XỬ LÝ ẨN VẬT THỂ (QUAN TRỌNG: Làm bước này TRƯỚC khi unpause)
     const allTargets = document.querySelectorAll('[mindar-image-target]');
     allTargets.forEach(target => {
+        // A. Kích hoạt sự kiện để Logic trong main.js chạy (Tắt tiếng, dừng video)
         target.emit('targetLost'); 
+        
+        // B. [BỔ SUNG QUAN TRỌNG] Ép ẩn vật thể về mặt hình ảnh ngay lập tức
+        // Can thiệp thẳng vào core của Three.js để xóa khỏi khung hình
+        if (target.object3D) {
+            target.object3D.visible = false; 
+        }
+        
+        // C. Nếu là video overlay (trường hợp đặc biệt), tìm con của nó để ẩn
+        // Vì đôi khi ẩn cha nhưng con chưa kịp cập nhật
+        const vidPlanes = target.querySelectorAll('a-plane, a-video');
+        vidPlanes.forEach(plane => {
+            plane.setAttribute('visible', 'false');
+        });
     });
 
-    // 3. Ẩn nút thoát
+    // 3. Bật lại Tracking của MindAR
+    // Đợi 1 chút xíu (100ms) để các lệnh ẩn ở trên thực hiện xong rồi mới chạy camera lại
+    // Điều này giúp tránh việc camera bật lên cái là thấy ngay hình cũ bị giật
+    setTimeout(() => {
+        if (scene.systems['mindar-image-system']) {
+            scene.systems['mindar-image-system'].unpause();
+        }
+    }, 100);
+
+    // 4. Ẩn nút thoát, hiện lại nút chụp
     btnExit.style.display = 'none';
+    btnCapture.style.display = 'block'; // Nhớ hiện lại nút chụp để dùng cho lần sau
   });
 });
 
