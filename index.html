@@ -13,33 +13,87 @@
     /* === CSS CƠ BẢN === */
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
     
-    /* Bảng thông tin (Giữ nguyên) */
-    #info-panel { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100; background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px); border-left: 3px solid #fff; padding: 10px 15px; border-radius: 6px; color: #fff; max-height: 25%; overflow-y: auto; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; pointer-events: auto; }
+    /* 1. BẢNG THÔNG TIN (Đã sửa: Đẩy lên cao hơn) */
+    #info-panel { 
+        position: fixed; 
+        bottom: 120px; /* <--- ĐÃ SỬA: Cách đáy 120px để tránh bị nút che */
+        left: 20px; 
+        right: 20px; 
+        z-index: 100; 
+        background: rgba(10, 10, 10, 0.75); 
+        backdrop-filter: blur(8px); 
+        border-left: 3px solid #fff; 
+        padding: 10px 15px; 
+        border-radius: 6px; 
+        color: #fff; 
+        max-height: 25%; 
+        overflow-y: auto; 
+        opacity: 0; 
+        transform: translateY(20px); 
+        transition: opacity 0.5s ease, transform 0.5s ease; 
+        pointer-events: auto; 
+    }
+    
     #info-panel.visible { opacity: 1; transform: translateY(0); }
     #ui-title { margin: 0 0 4px 0; font-size: 16px; font-weight: 700; text-transform: uppercase; }
     #ui-desc { margin: 0; font-size: 13px; line-height: 1.4; color: #e0e0e0; }
 
-    /* Nút Chụp (Tròn, trắng) */
-    #btn-capture { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; background: rgba(255, 255, 255, 0.9); border: 4px solid #ccc; border-radius: 50%; z-index: 200; display: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>'); background-position: center; background-repeat: no-repeat; background-size: 30px;}
-
-    /* Nút Thoát (Dài, đỏ) */
-    #btn-exit { 
-        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-        padding: 12px 30px; z-index: 201; display: none;
-        background: #f44336; color: white; border: none; border-radius: 30px;
-        font-weight: bold; font-size: 16px; cursor: pointer; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    /* Nút Chụp (Tròn, trắng - GIỮ NGUYÊN) */
+    #btn-capture { 
+        position: fixed; 
+        bottom: 30px; 
+        left: 50%; 
+        transform: translateX(-50%); 
+        width: 60px; 
+        height: 60px; 
+        background: rgba(255, 255, 255, 0.9); 
+        border: 4px solid #ccc; 
+        border-radius: 50%; 
+        z-index: 200; 
+        display: none; 
+        cursor: pointer; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/%3E%3C/svg%3E");
+        background-position: center; 
+        background-repeat: no-repeat; 
+        background-size: 30px;
     }
 
-    /* ẢNH NỀN ĐÓNG BĂNG (Quan trọng) */
+    /* 2. NÚT THOÁT (Đã sửa: Tròn, Đỏ, Icon X) */
+    #btn-exit { 
+        position: fixed; 
+        bottom: 30px; 
+        left: 50%; 
+        transform: translateX(-50%); 
+        width: 60px; /* Kích thước bằng nút chụp */
+        height: 60px;
+        border-radius: 50%; /* Bo tròn */
+        z-index: 201; 
+        display: none; 
+        background-color: #f44336; /* Màu đỏ */
+        border: 4px solid #fff; /* Viền trắng cho nổi */
+        cursor: pointer; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        /* Dùng SVG icon dấu X màu trắng */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E");
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 32px;
+        /* Xóa chữ vì đã dùng icon */
+        color: transparent; 
+        font-size: 0;
+    }
+    
+    #btn-exit:active { transform: translateX(-50%) scale(0.95); } /* Hiệu ứng nhấn */
+
+    /* ẢNH NỀN ĐÓNG BĂNG */
     #background-freeze {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         object-fit: cover; 
-        z-index: -1; /* Nằm dưới lớp 3D nhưng trên video camera */
+        z-index: -1; 
         display: none; 
     }
 
-    /* Ẩn các nút scanning mặc định của MindAR cho đẹp */
     .mindar-ui-scanning { display: none !important; }
   </style>
 
