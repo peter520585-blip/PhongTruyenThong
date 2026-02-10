@@ -224,80 +224,35 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
       targetEl.appendChild(modelContainer);
       targetEl.appendChild(createOverlay(item, 2000));
     }
-  // LOẠI 3: VIDEO (ĐÃ SỬA LỖI HIỂN THỊ & LƯU ẢNH)
-    // ============================================================
+    // LOẠI 3: VIDEO
     else if (item.type === 'video') {
-      
-      // 1. TẠO ASSET VIDEO
       const vidAsset = document.createElement('video');
       vidAsset.setAttribute('id', item.videoId);
       vidAsset.setAttribute('src', item.videoSrc);
       vidAsset.setAttribute('preload', 'auto');
       vidAsset.setAttribute('loop', 'true');
+      vidAsset.setAttribute('muted', 'true');
       vidAsset.setAttribute('playsinline', '');
       vidAsset.setAttribute('webkit-playsinline', '');
       vidAsset.setAttribute('crossorigin', 'anonymous');
-      
-      // [QUAN TRỌNG] Set trực tiếp thuộc tính muted bằng JS để chắc chắn
-      vidAsset.muted = true; 
-      
       assetsContainer.appendChild(vidAsset);
 
-      // 2. TẠO MẶT PHẲNG VIDEO (A-VIDEO)
+      targetEl.appendChild(createOverlay(item, 500));
+
+      const vidControl = document.createElement('a-entity');
+      vidControl.setAttribute('video-control', `video: #${item.videoId}; delay: 1500`);
+      targetEl.appendChild(vidControl);
+
       const vidPlane = document.createElement('a-video');
       vidPlane.setAttribute('src', `#${item.videoId}`);
       vidPlane.setAttribute('width', '1');
-      vidPlane.setAttribute('height', '0.5625'); // Tỷ lệ 16:9
-      vidPlane.setAttribute('position', '0 0 0.01'); // Nổi lên một chút
-      
-      // [QUAN TRỌNG] Mặc định ẩn đi (visible=false) thay vì dùng opacity=0
-      // Điều này giúp tránh hiện khung đen hoặc hình cũ khi chưa quét xong
-      vidPlane.setAttribute('visible', 'false');
+      vidPlane.setAttribute('height', '0.5625');
+      vidPlane.setAttribute('position', '0 0 0.001');
+      vidPlane.setAttribute('opacity', '0');
+      vidPlane.setAttribute('video-fx', 'opacity: 0.9; softness: 0.3');
+      vidPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 0.9; dur: 2000; easing: linear; startEvents: fade-in');
       
       targetEl.appendChild(vidPlane);
-
-      // 3. LOGIC ĐIỀU KHIỂN (Trực tiếp, không qua component trung gian)
-      targetEl.addEventListener('targetFound', () => {
-          // A. Hiện hình ảnh
-          vidPlane.setAttribute('visible', 'true'); 
-          
-          // B. Hiện nút chụp ảnh (nếu có)
-          const btnCapture = document.getElementById('btn-capture');
-          if(btnCapture) btnCapture.style.display = 'block';
-
-          // C. Chơi video (Xử lý Promise để tránh lỗi trình duyệt chặn)
-          vidAsset.currentTime = 0;
-          const playPromise = vidAsset.play();
-          
-          if (playPromise !== undefined) {
-              playPromise.then(() => {
-                  // Nếu chạy được thì mở tiếng
-                  vidAsset.muted = false; 
-              })
-              .catch(error => {
-                  // Nếu bị chặn thì tắt tiếng để chạy ép
-                  console.log("Auto-play bị chặn, chuyển sang chế độ im lặng");
-                  vidAsset.muted = true;
-                  vidAsset.play();
-              });
-          }
-      });
-
-      targetEl.addEventListener('targetLost', () => {
-          // A. Dừng video
-          vidAsset.pause();
-          
-          // B. Ẩn hình ảnh ngay lập tức (Chống lưu ảnh/Ghosting)
-          vidPlane.setAttribute('visible', 'false');
-
-          // C. Ẩn nút chụp ảnh
-          const btnCapture = document.getElementById('btn-capture');
-          if(btnCapture) btnCapture.style.display = 'none';
-      });
-
-      // 4. HIỆN BẢNG THÔNG TIN
-      // (Hàm createOverlay của bạn vẫn hoạt động tốt, giữ nguyên)
-      targetEl.appendChild(createOverlay(item, 500));
     }
  // LOẠI 4: WEBM OVERLAY (ĐÃ FIX LỖI ĐỨNG IM & LƯU ẢNH)
     // ============================================================
