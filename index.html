@@ -198,5 +198,51 @@
     document.body.addEventListener('click', unlockAudio);
     document.body.addEventListener('touchstart', unlockAudio);
   </script>
+  <script>
+    // XỬ LÝ ẨN MÀN HÌNH CHỜ (LOADING SCREEN)
+    document.addEventListener("DOMContentLoaded", () => {
+      const sceneEl = document.querySelector('a-scene');
+      const customLoader = document.getElementById('custom-loader');
+      const loaderStatus = document.getElementById('loader-status');
+      
+      let isLoaded = false; // Cờ đánh dấu đã load xong chưa
+
+      // Hàm thực hiện ẩn màn hình
+      function finishLoading() {
+          if (isLoaded || !customLoader) return;
+          isLoaded = true;
+          
+          // 1. Đổi chữ và màu sắc thành báo hiệu thành công
+          loaderStatus.textContent = "Đã hoàn tất! Xin mời trải nghiệm";
+          loaderStatus.style.animation = "none"; // Tắt nhấp nháy
+          loaderStatus.style.color = "#4ade80"; // Đổi sang màu xanh lá
+
+          // 2. Đợi 1.5 giây để người dùng kịp đọc chữ, sau đó làm mờ dần
+          setTimeout(() => {
+              customLoader.style.opacity = "0";
+              
+              // 3. Đợi thêm 1s cho mờ hẳn rồi xóa hoàn toàn khỏi màn hình
+              setTimeout(() => {
+                  customLoader.style.display = "none";
+              }, 1000);
+          }, 1500);
+      }
+
+      // SỰ KIỆN CHÍNH: MindAR phát ra 'arReady' khi Camera và 3D đã sẵn sàng
+      if (sceneEl) {
+          sceneEl.addEventListener("arReady", finishLoading);
+      }
+
+      // PHƯƠNG ÁN DỰ PHÒNG (Fallback): 
+      // Đề phòng trường hợp mạng lag hoặc người dùng từ chối camera làm sự kiện bị kẹt,
+      // tự động đóng bảng báo cáo sau 7 giây để họ còn thao tác tiếp.
+      setTimeout(() => {
+          if (!isLoaded) {
+              console.warn("Kích hoạt ẩn màn hình chờ dự phòng");
+              finishLoading();
+          }
+      }, 7000);
+    });
+  </script>
 </body>
 </html>
