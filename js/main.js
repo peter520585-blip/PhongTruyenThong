@@ -254,47 +254,48 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
       
       targetEl.appendChild(vidPlane);
     }
-// LOẠI 4: WEBM OVERLAY (HỖ TRỢ TRONG SUỐT CHO CẢ IOS & ANDROID)
+// ============================================================
+    // LOẠI 4: WEBM OVERLAY (TRONG SUỐT CHO CẢ IOS & ANDROID)
     // ============================================================
     else if (item.type === 'webm-overlay') {
-      
-      // 1. Tạo Asset Video (KHÔNG set cứng 'src' ở đây nữa)
+      // 1. TẠO ASSET VIDEO
       const vidAsset = document.createElement('video');
       vidAsset.setAttribute('id', item.videoId);
-      
-      vidAsset.setAttribute('preload', 'auto'); // Tải trước để đỡ bị đứng
+      vidAsset.setAttribute('preload', 'auto');
       vidAsset.setAttribute('playsinline', '');
       vidAsset.setAttribute('webkit-playsinline', '');
       vidAsset.setAttribute('crossorigin', 'anonymous');
-      // [Mẹo] Tắt tiếng trước để dễ Auto Play trên thiết bị di động
-      vidAsset.muted = true; 
+      vidAsset.muted = true; // Tắt tiếng để bypass AutoPlay trên mobile
 
-      // --- [QUAN TRỌNG]: TẠO 2 ĐỊNH DẠNG SOURCE ---
-      // Giả sử item.videoSrc trong database là "./assets/hieuung.webm" hoặc ".mp4"
-      const baseSrc = item.videoSrc;
+      // --- LOGIC TỰ ĐỘNG GẮN 2 FILE THEO DATABASE ---
+      if (item.videoSrc) {
+          // Lấy đường dẫn từ database (VD: './assets/videos/hieuung.webm')
+          // Hàm replace sẽ chặt bỏ phần đuôi đi, chỉ giữ lại gốc (VD: './assets/videos/hieuung')
+          const cleanPath = item.videoSrc.replace(/\.[^/.]+$/, "");
 
-      // Ưu tiên 1: MP4 (H.265) cho iOS/Safari
-      const sourceMP4 = document.createElement('source');
-      sourceMP4.setAttribute('src', baseSrc.replace(/\.[^/.]+$/, ".mp4"));
-      sourceMP4.setAttribute('type', 'video/mp4; codecs="hvc1"');
-      vidAsset.appendChild(sourceMP4);
+          // Tạo Source 1: Cho iPhone / Safari (Bắt buộc H.265 .mp4)
+          const sourceMP4 = document.createElement('source');
+          sourceMP4.setAttribute('src', cleanPath + ".mp4");
+          sourceMP4.setAttribute('type', 'video/mp4; codecs="hvc1"');
+          vidAsset.appendChild(sourceMP4);
 
-      // Ưu tiên 2: WEBM (VP9) cho Android/Chrome
-      const sourceWEBM = document.createElement('source');
-      sourceWEBM.setAttribute('src', baseSrc.replace(/\.[^/.]+$/, ".webm"));
-      sourceWEBM.setAttribute('type', 'video/webm');
-      vidAsset.appendChild(sourceWEBM);
-
+          // Tạo Source 2: Cho Android / Chrome (VP9 .webm)
+          const sourceWEBM = document.createElement('source');
+          sourceWEBM.setAttribute('src', cleanPath + ".webm");
+          sourceWEBM.setAttribute('type', 'video/webm');
+          vidAsset.appendChild(sourceWEBM);
+      }
+      
       assetsContainer.appendChild(vidAsset);
 
-      // 2. Tạo tấm hiển thị (Plane)
+      // 2. TẠO TẤM HIỂN THỊ (PLANE)
       const vidPlane = document.createElement('a-plane');
       vidPlane.setAttribute('src', `#${item.videoId}`);
       
-      // [QUAN TRỌNG] Ẩn đi ngay từ đầu để tránh hiện khung hình đen hoặc đứng im
+      // [QUAN TRỌNG] Ẩn ngay từ đầu để tránh hiện bóng đen
       vidPlane.setAttribute('visible', 'false'); 
 
-      // Auto Fit kích thước tỷ lệ
+      // Auto Fit kích thước
       vidPlane.setAttribute('width', '1'); 
       vidPlane.setAttribute('height', '0.5'); 
       vidAsset.addEventListener('loadedmetadata', () => {
@@ -304,35 +305,29 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
           }
       });
 
-      // Vị trí & Vật liệu
+      // Vị trí & Vật liệu shader flat giúp video sáng đẹp
       vidPlane.setAttribute('position', '0 0 0.05');
-      // shader: flat giúp video sáng rõ không bị ảnh hưởng bởi ánh sáng môi trường
       vidPlane.setAttribute('material', 'shader: flat; transparent: true; depthWrite: false');
 
-      // 3. Logic điều khiển (targetFound & targetLost)
+      // 3. LOGIC ĐIỀU KHIỂN (FIX LỖI)
       targetEl.addEventListener('targetFound', () => {
-        // --- HIỆN NÚT CHỤP ẢNH ---
+        // Hiện nút chụp ảnh
         const btnCapture = document.getElementById('btn-capture');
         if(btnCapture) btnCapture.style.display = 'block'; 
 
-        // [FIX LỖI ĐỨNG IM]
-        // B1: Cho hiển thị tấm plane lên
+        // B1: Hiện plane
         vidPlane.setAttribute('visible', 'true');
-
         // B2: Tua về đầu
         vidAsset.currentTime = 0; 
 
-        // B3: Dùng Promise để ép chạy video
+        // B3: Ép chạy video bằng Promise
         var playPromise = vidAsset.play();
-        
         if (playPromise !== undefined) {
             playPromise.then(_ => {
-                // Video đã chạy thành công -> Bật tiếng lên (nếu muốn)
-                vidAsset.muted = false;
+                vidAsset.muted = false; // Chạy thành công thì bật tiếng
             })
             .catch(error => {
-                // Nếu bị chặn Autoplay -> Phải tắt tiếng mới cho chạy
-                console.log("Autoplay bị chặn, chuyển sang chế độ không tiếng");
+                console.log("Autoplay bị chặn, ép chạy không tiếng");
                 vidAsset.muted = true;
                 vidAsset.play();
             });
@@ -340,15 +335,12 @@ document.addEventListener("DOMContentLoaded", async () => { // <--- Thêm chữ 
       });
 
       targetEl.addEventListener('targetLost', () => {
-        // --- ẨN NÚT CHỤP ẢNH ---
+        // Ẩn nút chụp ảnh
         const btnCapture = document.getElementById('btn-capture');
         if(btnCapture) btnCapture.style.display = 'none';
 
-        // [FIX LỖI LƯU ẢNH/DÍNH ẢNH]
-        // B1: Dừng video
+        // DỪNG & ẨN NGAY LẬP TỨC ĐỂ CHỐNG LƯU ẢNH
         vidAsset.pause();
-        
-        // B2: Ẩn tấm plane đi ngay lập tức
         vidPlane.setAttribute('visible', 'false');
       });
 
